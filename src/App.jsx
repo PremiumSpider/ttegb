@@ -73,12 +73,12 @@ const BountyModal = ({
     }
   }
 
-  const handleSelect = () => {
-    if (localState.image || localState.text.trim()) {
-      onSave(selectedBountyIndex, localState)
-      setCurrentBountyIndex(selectedBountyIndex)
-    }
+const handleSelect = () => {
+  if (localState.image || localState.text.trim()) {
+    onSave(selectedBountyIndex, localState);
+    setCurrentBountyIndex(selectedBountyIndex);
   }
+};
 
   if (!isOpen) return null
 
@@ -236,15 +236,17 @@ const BountyModal = ({
               </button>
             ) : (
               <button 
-                onClick={handleSelect}
-                className={`px-4 py-2 text-white rounded-lg transition-colors ${
-                  selectedBountyIndex === currentBountyIndex
-                    ? 'bg-green-500 hover:bg-green-600'
-                    : 'bg-purple-500 hover:bg-purple-600'
-                }`}
-              >
-                {selectedBountyIndex === currentBountyIndex ? 'Selected' : 'Select'}
-              </button>
+  onClick={handleSelect}
+  className={`px-4 py-2 text-white rounded-lg transition-colors ${
+    bounties.length === 0
+      ? 'bg-purple-500 hover:bg-purple-600'
+      : selectedBountyIndex === currentBountyIndex
+      ? 'bg-green-500 hover:bg-green-600'
+      : 'bg-purple-500 hover:bg-purple-600'
+  }`}
+>
+  {bounties.length === 0 ? 'Save' : selectedBountyIndex === currentBountyIndex ? 'Selected' : 'Select'}
+</button>
             )}
           </div>
         </div>
