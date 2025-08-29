@@ -281,6 +281,7 @@ function App() {
   const [controlsVisible, setControlsVisible] = useState(true)
   const controlsTimeout = useRef(null)
   const imageContainerRef = useRef(null)
+  const [useStoneStyle, setUseStoneStyle] = useState(false);
   const [spriteActive, setSpriteActive] = useState(false)
   const [showBountyModal, setShowBountyModal] = useState(false)
   const [shimmerActive, setShimmerActive] = useState(false)
@@ -780,6 +781,7 @@ useEffect(() => {
         setChaseNumbers(new Set(parsedState.chaseNumbers))
         setMarks(parsedState.marks || [])
         setMarkSize(parsedState.markSize || 4)
+        setUseStoneStyle(parsedState.useStoneStyle || false)
       } else {
         setBagCount(50)
         setChaseCount(8)
@@ -820,13 +822,14 @@ useEffect(() => {
         chaseNumbers: Array.from(chaseNumbers),
         remainingChases,
         marks,
-        markSize
+        markSize,
+        useStoneStyle
       }
       localStorage.setItem('gachaBagState', JSON.stringify(stateToSave))
     } catch (error) {
       console.error('Error saving state:', error)
     }
-  }, [bagCount, chaseCount, selectedNumbers, chaseNumbers, remainingChases, marks, markSize, isLoading])
+  }, [bagCount, chaseCount, selectedNumbers, chaseNumbers, remainingChases, marks, markSize, isLoading, useStoneStyle])
 
   useEffect(() => {
     setIsCooked(remainingChases === 0 && selectedNumbers.size < bagCount)
@@ -1015,6 +1018,16 @@ useEffect(() => {
       >
         Reset
       </button>
+        <button
+    onClick={() => setUseStoneStyle(!useStoneStyle)}
+    className={`px-4 py-2 text-white rounded-lg transition-colors ${
+      useStoneStyle 
+        ? 'bg-slate-600 hover:bg-slate-700' 
+        : 'bg-purple-600 hover:bg-purple-700'
+    }`}
+  >
+    {useStoneStyle ? 'Stone' : 'Purple'}
+  </button>
     </div>
   </motion.div>
 )}
@@ -1034,7 +1047,7 @@ useEffect(() => {
             </AnimatePresence>
             
             <div className={`grid ${gridCols} gap-2 mx-4 flex-1 h-[calc(100vh-280px)]`}>
-             {numbers.map((number) => (
+{numbers.map((number) => (
   <motion.div
     key={number}
     onClick={() => toggleNumber(number)}
@@ -1045,7 +1058,9 @@ useEffect(() => {
         chaseNumbers.has(number)
           ? 'bg-gradient-to-r from-amber-400 via-yellow-500 to-amber-600 text-white'
           : selectedNumbers.has(number)
-          ? 'bg-gradient-to-r from-purple-600 to-purple-800 text-white'
+          ? useStoneStyle
+            ? 'bg-gradient-to-br from-slate-600 to-slate-800 text-gray-300'
+            : 'bg-gradient-to-r from-purple-600 to-purple-800 text-white'
           : 'bg-gradient-to-r from-blue-700 to-blue-900 text-white hover:from-blue-600 hover:to-blue-800'
       }
     `}
@@ -1059,7 +1074,7 @@ useEffect(() => {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
       >
-        <div className="w-full h-0.5 bg-white transform rotate-45" />
+        <div className={`w-full h-0.5 ${useStoneStyle ? 'bg-gray-400' : 'bg-white'} transform rotate-45`} />
       </motion.div>
     )}
     {!selectedNumbers.has(number) && shimmerActive && <SparklesEffect />}
@@ -1201,7 +1216,7 @@ useEffect(() => {
   )}
 </AnimatePresence>
 
-{/* Vertical controls container */}
+{/* Original Left-side Vertical Controls Container */}
 <div className="absolute left-4 top-[100px] z-50 flex flex-col gap-4 bg-transparent backdrop-blur-none p-4 rounded-xl border-2 border-white/20">
   {/* Blastoise toggle button */}
   <motion.div
@@ -1217,7 +1232,7 @@ useEffect(() => {
     />
   </motion.div>
 
-  {/* Bounty Edit Button - Always visible */}
+  {/* Bounty Edit Button */}
   <motion.button
     whileHover={{ scale: 1.1 }}
     whileTap={{ scale: 0.9 }}
@@ -1227,7 +1242,7 @@ useEffect(() => {
     B
   </motion.button>
 
-  {/* Enable/Disable Bounty Button - Only show when bounties exist */}
+  {/* Enable/Disable Bounty Button */}
   {bounties.length > 0 && (
     <motion.button
       whileHover={{ scale: 1.1 }}
@@ -1251,6 +1266,42 @@ useEffect(() => {
   )}
 </div>
 
+{/* New Right-side Chase Controls Container */}
+<div className="absolute right-4 top-[100px] z-50 flex flex-col gap-4 bg-transparent backdrop-blur-none p-4 rounded-xl border-2 border-white/20">
+  <motion.button
+    whileHover={{ scale: 1.1 }}
+    whileTap={{ scale: 0.9 }}
+    onClick={() => {
+      handleChaseCountChange(1);
+      setShowPlusPopup(true);
+      setTimeout(() => setShowPlusPopup(false), 1000);
+    }}
+    className="w-20 h-20 bg-black/20 hover:bg-black/30 rounded-full flex items-center justify-center text-white text-xl font-bold shadow-lg transition-colors border border-white/20"
+  >
+    +1C
+  </motion.button>
+
+  <motion.button
+    whileHover={{ scale: 1.1 }}
+    whileTap={{ scale: 0.9 }}
+    onClick={() => {
+      handleChaseCountChange(-1);
+      setShowMinusPopup(true);
+      setTimeout(() => setShowMinusPopup(false), 1000);
+    }}
+    className="w-20 h-20 bg-black/20 hover:bg-black/30 rounded-full flex items-center justify-center text-white text-xl font-bold shadow-lg transition-colors border border-white/20"
+  >
+    -1C
+  </motion.button>
+</div>
+
+{/* Add these popups to the chases view */}
+<AnimatePresence>
+  {showMinusPopup && <CenterPopup text="-1 Chase" />}
+</AnimatePresence>
+<AnimatePresence>
+  {showPlusPopup && <CenterPopup text="+1 Chase" />}
+</AnimatePresence>
 {/* Bouncing sprite */}
 {spriteActive && (
   <motion.div
