@@ -284,6 +284,8 @@ function App() {
   const [spriteActive, setSpriteActive] = useState(false)
   const [showBountyModal, setShowBountyModal] = useState(false)
   const [shimmerActive, setShimmerActive] = useState(false)
+  const [showMinusPopup, setShowMinusPopup] = useState(false);
+const [showPlusPopup, setShowPlusPopup] = useState(false);
 const [bounties, setBounties] = useState([])
 const [currentBountyIndex, setCurrentBountyIndex] = useState(0)
   const [bountyText, setBountyText] = useState('')
@@ -559,6 +561,19 @@ const handleInsuranceImageClick = (e) => {
     }
   }
 
+  const CenterPopup = ({ text }) => (
+  <motion.div
+    initial={{ opacity: 0, scale: 0.5 }}
+    animate={{ opacity: 1, scale: 1 }}
+    exit={{ opacity: 0, scale: 0.5 }}
+    className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none"
+  >
+    <div className="bg-black/50 backdrop-blur-sm px-8 py-4 rounded-xl">
+      <span className="text-4xl font-bold text-white">{text}</span>
+    </div>
+  </motion.div>
+);
+
 const handleImageClick = (e) => {
   if (!imageContainerRef.current) return;
   
@@ -830,7 +845,7 @@ useEffect(() => {
       <div className="h-full bg-white/10 backdrop-blur-md rounded-2xl shadow-xl">
         {currentView === 'bags' ? (
           <div className="h-full flex flex-col">
-            <div className="flex items-center justify-between p-4">
+<div className="flex items-center justify-between p-4">
   <button
     onClick={() => setCurrentView('chases')}
     className="px-6 py-3 bg-gradient-to-r from-blue-600 to-teal-500 text-white rounded-xl shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
@@ -838,16 +853,32 @@ useEffect(() => {
     Top Chases
   </button>
 
- <motion.img 
+  <div className="relative">
+    <motion.img 
   src="/9.gif"
   alt="Blastoise"
-  className={`w-20 h-20 object-contain cursor-pointer ${
-    shimmerActive ? 'ring-4 ring-blue-500/50 ring-opacity-50 rounded-full' : ''
-  }`}
-  onClick={() => setShimmerActive(!shimmerActive)}
+  className="w-20 h-20 object-contain cursor-pointer"
+  onClick={() => {
+    handleChaseCountChange(-1);
+    setShowMinusPopup(true);
+    setTimeout(() => setShowMinusPopup(false), 1000);
+  }}
   whileHover={{ scale: 1.1 }}
   whileTap={{ scale: 0.9 }}
 />
+    <AnimatePresence>
+      {showMinusPopup && (
+        <motion.div
+          initial={{ opacity: 0, y: 0 }}
+          animate={{ opacity: 1, y: -20 }}
+          exit={{ opacity: 0 }}
+          className="absolute top-0 left-1/2 -translate-x-1/2 text-white font-bold text-xl"
+        >
+          -1 Chase
+        </motion.div>
+      )}
+    </AnimatePresence>
+  </div>
 
   <div className="relative cursor-pointer" onClick={() => setIsEditMode(!isEditMode)}>
     <img 
@@ -855,15 +886,35 @@ useEffect(() => {
       alt="Suicune"
       className="w-26 h-26 object-contain"
     />
-    
     <div className="absolute inset-0 rounded-full hover:bg-white/10 transition-colors" />
   </div>
 
-  <img 
-    src="/9.gif"
-    alt="Blastoise"
-    className="w-20 h-20 object-contain"
-  />
+  <div className="relative">
+    <motion.img 
+  src="/9.gif"
+  alt="Blastoise"
+  className="w-20 h-20 object-contain cursor-pointer"
+  onClick={() => {
+    handleChaseCountChange(1);
+    setShowPlusPopup(true);
+    setTimeout(() => setShowPlusPopup(false), 1000);
+  }}
+  whileHover={{ scale: 1.1 }}
+  whileTap={{ scale: 0.9 }}
+/>
+    <AnimatePresence>
+      {showPlusPopup && (
+        <motion.div
+          initial={{ opacity: 0, y: 0 }}
+          animate={{ opacity: 1, y: -20 }}
+          exit={{ opacity: 0 }}
+          className="absolute top-0 left-1/2 -translate-x-1/2 text-white font-bold text-xl"
+        >
+          +1 Chase
+        </motion.div>
+      )}
+    </AnimatePresence>
+  </div>
 
   <button
     onClick={() => setCurrentView('insurance')}
@@ -872,7 +923,6 @@ useEffect(() => {
     Insurance
   </button>
 </div>
-
             <div className="flex items-center justify-center gap-4 mb-2">
               <img 
                 src="/pokegoons-logo.png" 
@@ -898,65 +948,76 @@ useEffect(() => {
 
             <AnimatePresence mode="wait">
               {isEditMode && (
-                <motion.div
-                  key="controls"
-                  initial={{ opacity: 0, y: -20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  className="flex flex-wrap items-center justify-between gap-4 mx-4 mb-2 bg-black/20 backdrop-blur-sm p-4 rounded-xl"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2">
-                      <span className="text-base font-medium text-white">Total Bags:</span>
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => handleBagCountChange(-1)}
-                          className="w-10 h-10 flex items-center justify-center bg-black/30 text-white rounded-lg text-xl"
-                        >
-                          -
-                        </button>
-                        <span className="text-xl font-bold text-white w-10 text-center">
-                          {bagCount}
-                        </span>
-                        <button
-                          onClick={() => handleBagCountChange(1)}
-                          className="w-10 h-10 flex items-center justify-center bg-black/30 text-white rounded-lg text-xl"
-                        >
-                          +
-                        </button>
-                      </div>
-                    </div>
+  <motion.div
+    key="controls"
+    initial={{ opacity: 0, y: -20 }}
+    animate={{ opacity: 1, y: 0 }}
+    exit={{ opacity: 0, y: -20 }}
+    className="flex flex-wrap items-center justify-between gap-4 mx-4 mb-2 bg-black/20 backdrop-blur-sm p-4 rounded-xl"
+  >
+    <div className="flex items-center gap-4">
+      <div className="flex items-center gap-2">
+        <span className="text-base font-medium text-white">Total Bags:</span>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => handleBagCountChange(-1)}
+            className="w-10 h-10 flex items-center justify-center bg-black/30 text-white rounded-lg text-xl"
+          >
+            -
+          </button>
+          <span className="text-xl font-bold text-white w-10 text-center">
+            {bagCount}
+          </span>
+          <button
+            onClick={() => handleBagCountChange(1)}
+            className="w-10 h-10 flex items-center justify-center bg-black/30 text-white rounded-lg text-xl"
+          >
+            +
+          </button>
+        </div>
+      </div>
 
-                    <div className="flex items-center gap-2">
-                      <span className="text-base font-medium text-white">Total Chases:</span>
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => handleChaseCountChange(-1)}
-                          className="w-10 h-10 flex items-center justify-center bg-black/30 text-white rounded-lg text-xl"
-                        >
-                          -
-                        </button>
-                        <span className="text-xl font-bold text-white w-10 text-center">
-                          {chaseCount}
-                        </span>
-                        <button
-                          onClick={() => handleChaseCountChange(1)}
-                          className="w-10 h-10 flex items-center justify-center bg-black/30 text-white rounded-lg text-xl"
-                        >
-                          +
-                        </button>
-                      </div>
-                    </div>
+      <div className="flex items-center gap-2">
+        <span className="text-base font-medium text-white">Total Chases:</span>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => handleChaseCountChange(-1)}
+            className="w-10 h-10 flex items-center justify-center bg-black/30 text-white rounded-lg text-xl"
+          >
+            -
+          </button>
+          <span className="text-xl font-bold text-white w-10 text-center">
+            {chaseCount}
+          </span>
+          <button
+            onClick={() => handleChaseCountChange(1)}
+            className="w-10 h-10 flex items-center justify-center bg-black/30 text-white rounded-lg text-xl"
+          >
+            +
+          </button>
+        </div>
+      </div>
 
-                    <button
-                      onClick={() => setShowResetConfirm(true)}
-                      className="px-4 py-2 bg-gradient-to-r from-red-500 to-pink-600 text-white rounded-lg hover:shadow-lg transition-colors text-base font-medium"
-                    >
-                      Reset
-                    </button>
-                  </div>
-                </motion.div>
-              )}
+      <button
+        onClick={() => setShimmerActive(!shimmerActive)}
+        className={`px-4 py-2 text-white rounded-lg transition-colors ${
+          shimmerActive 
+            ? 'bg-blue-500/50 hover:bg-blue-600/50 ring-2 ring-blue-400' 
+            : 'bg-blue-500/30 hover:bg-blue-500/40'
+        }`}
+      >
+        Shine
+      </button>
+
+      <button
+        onClick={() => setShowResetConfirm(true)}
+        className="px-4 py-2 bg-gradient-to-r from-red-500 to-pink-600 text-white rounded-lg hover:shadow-lg transition-colors text-base font-medium"
+      >
+        Reset
+      </button>
+    </div>
+  </motion.div>
+)}
             </AnimatePresence>
 
             <AnimatePresence>
@@ -1017,6 +1078,15 @@ useEffect(() => {
                 Hit Ratio: {calculateHitRatio()}
               </div>
             </div>
+
+            {/* Add the popups here, right before the final closing div */}
+    <AnimatePresence>
+      {showMinusPopup && <CenterPopup text="-1 Chase" />}
+    </AnimatePresence>
+    <AnimatePresence>
+      {showPlusPopup && <CenterPopup text="+1 Chase" />}
+    </AnimatePresence>
+
 
             <AnimatePresence>
               {showResetConfirm && (
