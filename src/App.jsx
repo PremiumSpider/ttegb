@@ -9,29 +9,30 @@ const BountyModal = ({
   isOpen, 
   onClose, 
   onSave, 
-  initialImage, 
-  initialText, 
-  initialDuration,
-  initialInterval
+  bounties,
+  currentBountyIndex,
+  setCurrentBountyIndex, 
+  onDelete
 }) => {
   const [localState, setLocalState] = useState({
-    image: initialImage,
-    text: initialText,
-    duration: initialDuration,
-    interval: initialInterval
+    image: bounties[currentBountyIndex]?.image || null,
+    text: bounties[currentBountyIndex]?.text || '',
+    duration: bounties[currentBountyIndex]?.duration || 5,
+    interval: bounties[currentBountyIndex]?.interval || 10
   })
 
-  // Reset local state when modal opens
+  const [selectedBountyIndex, setSelectedBountyIndex] = useState(currentBountyIndex)
+
   useEffect(() => {
     if (isOpen) {
       setLocalState({
-        image: initialImage,
-        text: initialText,
-        duration: initialDuration,
-        interval: initialInterval
+        image: bounties[selectedBountyIndex]?.image || null,
+        text: bounties[selectedBountyIndex]?.text || '',
+        duration: bounties[selectedBountyIndex]?.duration || 5,
+        interval: bounties[selectedBountyIndex]?.interval || 10
       })
     }
-  }, [isOpen, initialImage, initialText, initialDuration, initialInterval])
+  }, [isOpen, selectedBountyIndex, bounties])
 
   const handleImageUpload = useCallback((e) => {
     const file = e.target.files[0]
@@ -47,9 +48,30 @@ const BountyModal = ({
     }
   }, [])
 
-  const handleSave = useCallback(() => {
-    onSave(localState)
-  }, [localState, onSave])
+const handleAddNew = () => {
+  // First save current state if it has content
+  if (localState.image || localState.text.trim()) {
+    onSave(selectedBountyIndex, localState);
+  }
+  
+  // Create new empty state and select it
+  const newIndex = bounties.length;
+  setSelectedBountyIndex(newIndex);
+  setLocalState({
+    image: null,
+    text: '',
+    duration: 5,
+    interval: 10
+  });
+};
+
+const handleSelect = () => {
+  if (localState.image || localState.text.trim()) {
+    onSave(selectedBountyIndex, localState);
+    setCurrentBountyIndex(selectedBountyIndex);
+  }
+};
+
 
   if (!isOpen) return null
 
@@ -70,8 +92,34 @@ const BountyModal = ({
       >
         <h2 className="text-2xl font-bold text-white mb-4">Bounty Settings</h2>
         
+        {/* Bounty Navigation */}
+        <div className="mb-4 flex gap-2 flex-wrap">
+          {bounties.map((bounty, index) => (
+            <button
+              key={index}
+              onClick={() => setSelectedBountyIndex(index)}
+              className={`px-3 py-1 rounded ${
+                selectedBountyIndex === index 
+                  ? 'bg-purple-500' 
+                  : 'bg-purple-800/50'
+              } text-white hover:bg-purple-700 transition-colors`}
+            >
+              {index + 1}
+            </button>
+          ))}
+          <button
+            onClick={handleAddNew}
+            className="px-3 py-1 rounded bg-purple-800/50 hover:bg-purple-700/50 text-white"
+          >
+            +
+          </button>
+        </div>
+
+        {/* Image Upload */}
         <div className="mb-4">
-          <label className="block text-white mb-2">Bounty Image</label>
+          <label className="block text-white mb-2">
+            Bounty Image {selectedBountyIndex + 1}
+          </label>
           <div className="h-40 bg-purple-800/50 rounded-lg overflow-hidden">
             {localState.image ? (
               <div className="relative w-full h-full group">
@@ -94,7 +142,7 @@ const BountyModal = ({
               </div>
             ) : (
               <label className="w-full h-full flex items-center justify-center cursor-pointer hover:bg-purple-700/50 transition-colors">
-                <span className="text-white">Click to Upload Image</span>
+                <span className="text-white">Click to Upload Image {selectedBountyIndex + 1}</span>
                 <input
                   type="file"
                   accept="image/*"
@@ -106,6 +154,7 @@ const BountyModal = ({
           </div>
         </div>
 
+        {/* Text Input */}
         <div className="mb-4">
           <label className="block text-white mb-2">Bounty Text</label>
           <input
@@ -117,6 +166,7 @@ const BountyModal = ({
           />
         </div>
 
+        {/* Duration Slider */}
         <div className="mb-4">
           <label className="block text-white mb-2">Display Duration (seconds)</label>
           <div className="flex items-center gap-4">
@@ -132,6 +182,7 @@ const BountyModal = ({
           </div>
         </div>
 
+        {/* Interval Slider */}
         <div className="mb-6">
           <label className="block text-white mb-2">Display Interval (seconds)</label>
           <div className="flex items-center gap-4">
@@ -147,20 +198,35 @@ const BountyModal = ({
           </div>
         </div>
 
-        <div className="flex justify-end gap-3">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 bg-purple-800/50 text-white rounded-lg hover:bg-purple-700/50 transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleSave}
-            className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors"
-          >
-            Save
-          </button>
-        </div>
+        {/* Action Buttons */}
+        <div className="flex justify-between gap-3">
+  {bounties[selectedBountyIndex] && (
+    <button
+      onClick={() => onDelete(selectedBountyIndex)}
+      className="px-4 py-2 bg-red-500/50 text-white rounded-lg hover:bg-red-600/50 transition-colors"
+    >
+      Delete
+    </button>
+  )}
+  <div className="flex gap-3 ml-auto">
+    <button
+      onClick={onClose}
+      className="px-4 py-2 bg-purple-800/50 text-white rounded-lg hover:bg-purple-700/50 transition-colors"
+    >
+      Close
+    </button>
+    <button 
+      onClick={handleSelect}
+      className={`px-4 py-2 text-white rounded-lg transition-colors ${
+        selectedBountyIndex === currentBountyIndex
+          ? 'bg-green-500 hover:bg-green-600'
+          : 'bg-purple-500 hover:bg-purple-600'
+      }`}
+    >
+      {selectedBountyIndex === currentBountyIndex ? 'Selected' : 'Select'}
+    </button>
+  </div>
+</div>
       </motion.div>
     </motion.div>
   )
@@ -194,7 +260,8 @@ function App() {
   const imageContainerRef = useRef(null)
   const [spriteActive, setSpriteActive] = useState(false)
   const [showBountyModal, setShowBountyModal] = useState(false)
-  const [bountyImage, setBountyImage] = useState(null)
+const [bounties, setBounties] = useState([])
+const [currentBountyIndex, setCurrentBountyIndex] = useState(0)
   const [bountyText, setBountyText] = useState('')
   const [bountyDuration, setBountyDuration] = useState(5)
   const [bountyInterval, setBountyInterval] = useState(10)
@@ -228,27 +295,39 @@ const bountyTimeout = useRef(null)
 
   // Add these helper functions inside your App component
 const startBounty = () => {
+  if (!bounties.length) {
+    setIsPlaying(false);
+    return;
+  }
+  
   if (bountyIntervalRef.current) {
-    clearInterval(bountyIntervalRef.current)
+    clearInterval(bountyIntervalRef.current);
   }
   if (bountyTimeout.current) {
-    clearTimeout(bountyTimeout.current)
+    clearTimeout(bountyTimeout.current);
   }
 
-  setBountyActive(true)
-  setShowBounty(true)
+  setBountyActive(true);
+  setShowBounty(true);
   
-  bountyTimeout.current = setTimeout(() => {
-    setShowBounty(false)
-  }, bountyDuration * 1000)
-
-  bountyIntervalRef.current = setInterval(() => {
-    setShowBounty(true)
+  const showNextBounty = () => {
+    const currentBounty = bounties[currentBountyIndex];
+    setShowBounty(true);
+    
     bountyTimeout.current = setTimeout(() => {
-      setShowBounty(false)
-    }, bountyDuration * 1000)
-  }, bountyInterval * 1000)
-}
+      setShowBounty(false);
+      setTimeout(() => {
+        setCurrentBountyIndex((prev) => (prev + 1) % bounties.length);
+      }, 500); // Add a small delay before changing the index
+    }, currentBounty.duration * 1000);
+  };
+
+  showNextBounty(); // Show first bounty immediately
+  
+  bountyIntervalRef.current = setInterval(() => {
+    showNextBounty();
+  }, bounties[currentBountyIndex].interval * 1000);
+};
 
 const stopBounty = () => {
   setBountyActive(false)
@@ -261,13 +340,16 @@ const stopBounty = () => {
   setShowBounty(false)
 }
 
-const handleBountySave = (settings) => {
-  setBountyImage(settings.image);
-  setBountyText(settings.text);
-  setBountyDuration(settings.duration);
-  setBountyInterval(settings.interval);
-  setShowBountyModal(false);
+const handleBountySave = (index, settings) => {
+  const newBounties = [...bounties];
+  if (index === bounties.length) {
+    newBounties.push(settings);
+  } else {
+    newBounties[index] = settings;
+  }
+  setBounties(newBounties);
   
+  // Stop bounty if playing
   if (isPlaying) {
     stopBounty();
     setTimeout(() => {
@@ -275,6 +357,14 @@ const handleBountySave = (settings) => {
     }, 100);
   }
 };
+
+const handleBountyDelete = (index) => {
+  const newBounties = bounties.filter((_, i) => i !== index)
+  setBounties(newBounties)
+  if (currentBountyIndex >= newBounties.length) {
+    setCurrentBountyIndex(Math.max(0, newBounties.length - 1))
+  }
+}
 
   // Helper function for insurance navigation
   const getNextValidIndex = (currentIndex, direction) => {
@@ -435,37 +525,57 @@ const handleImageClick = (e) => {
     setMarks(marks.slice(0, -1))
   }
 
-  const handleReset = () => {
-    try {
-      localStorage.removeItem('gachaBagState')
-      localStorage.removeItem('gachaBagImage')
-      localStorage.removeItem('gachaBagZoomState')
-      localStorage.removeItem('insuranceImages')
-      localStorage.removeItem('insuranceMarks')
-      setBagCount(50)
-      setChaseCount(8)
-      setRemainingChases(8)
-      setSelectedNumbers(new Set())
-      setChaseNumbers(new Set())
-      setNumbers(Array.from({ length: 50 }, (_, i) => i + 1))
-      setIsCooked(false)
-      setPrizeImage(null)
-      setMarks([])
-      setMarkSize(4)
-      setZoomState({ scale: 1, positionX: 0, positionY: 0 })
-      setShowResetConfirm(false)
-      setInsuranceImages([null, null, null, null, null])
-      setInsuranceMarks([[], [], [], [], []])
-      setCurrentInsuranceIndex(0)
-    } catch (error) {
-      console.error('Error resetting state:', error)
-    }
+const handleReset = () => {
+  try {
+    localStorage.removeItem('gachaBagState')
+    localStorage.removeItem('gachaBagImage')
+    localStorage.removeItem('gachaBagZoomState')
+    localStorage.removeItem('insuranceImages')
+    localStorage.removeItem('insuranceMarks')
+    localStorage.removeItem('bounties') // Add this line
+    setBagCount(50)
+    setChaseCount(8)
+    setRemainingChases(8)
+    setSelectedNumbers(new Set())
+    setChaseNumbers(new Set())
+    setNumbers(Array.from({ length: 50 }, (_, i) => i + 1))
+    setIsCooked(false)
+    setPrizeImage(null)
+    setMarks([])
+    setMarkSize(4)
+    setZoomState({ scale: 1, positionX: 0, positionY: 0 })
+    setShowResetConfirm(false)
+    setInsuranceImages([null, null, null, null, null])
+    setInsuranceMarks([[], [], [], [], []])
+    setCurrentInsuranceIndex(0)
+    setBounties([]) // Add this line
+    setCurrentBountyIndex(0) // Add this line
+  } catch (error) {
+    console.error('Error resetting state:', error)
   }
+}
 
   // Effects
-  // Add this useEffect to your App component
+ // Add this to your App component
 useEffect(() => {
-  if (isPlaying && bountyImage) {
+  try {
+    const savedBounties = localStorage.getItem('bounties');
+    if (savedBounties) {
+      setBounties(JSON.parse(savedBounties));
+    }
+  } catch (error) {
+    console.error('Error loading bounties:', error);
+  }
+}, []);
+
+// Add this to save bounties when they change
+useEffect(() => {
+  if (bounties.length > 0) {
+    localStorage.setItem('bounties', JSON.stringify(bounties));
+  }
+}, [bounties]);
+useEffect(() => {
+  if (isPlaying) {
     startBounty();
   } else {
     stopBounty();
@@ -957,7 +1067,7 @@ useEffect(() => {
 
 {/* Vertical controls container */}
 <div className="absolute left-4 top-[100px] z-50 flex flex-col gap-4 bg-transparent backdrop-blur-none p-4 rounded-xl border-2 border-white/20">
-  {/* Blastoise toggle button - More transparent */}
+  {/* Blastoise toggle button */}
   <motion.div
     onClick={toggleSprite}
     className="cursor-pointer bg-black/10 rounded-full p-2"
@@ -971,33 +1081,38 @@ useEffect(() => {
     />
   </motion.div>
 
-  {/* Bounty Button */}
+  {/* Bounty Edit Button - Always visible */}
   <motion.button
     whileHover={{ scale: 1.1 }}
     whileTap={{ scale: 0.9 }}
     onClick={() => setShowBountyModal(true)}
-    className="w-20 h-20 bg-black/20 rounded-full flex items-center justify-center text-white text-2xl font-bold shadow-lg hover:bg-black/30 transition-colors border border-white/20"
+    className="w-20 h-20 bg-black/20 hover:bg-black/30 rounded-full flex items-center justify-center text-white text-2xl font-bold shadow-lg transition-colors border border-white/20"
   >
     B
   </motion.button>
-{/* Play/Pause Button - Just colors, no icons */}
-<motion.button
-  whileHover={{ scale: 1.1 }}
-  whileTap={{ scale: 0.9 }}
-  onClick={() => {
-    setIsPlaying(!isPlaying);
-    if (!isPlaying) {
-      startBounty();
-    } else {
-      stopBounty();
-    }
-  }}
-  className={`w-20 h-20 ${
-    isPlaying 
-      ? 'bg-green-500/30 hover:bg-green-500/40' 
-      : 'bg-red-500/30 hover:bg-red-500/40'
-  } rounded-full flex items-center justify-center text-white shadow-lg transition-all border border-white/20`}
-/>
+
+  {/* Enable/Disable Bounty Button - Only show when bounties exist */}
+  {bounties.length > 0 && (
+    <motion.button
+      whileHover={{ scale: 1.1 }}
+      whileTap={{ scale: 0.9 }}
+      onClick={() => {
+        setIsPlaying(!isPlaying);
+        if (!isPlaying) {
+          startBounty();
+        } else {
+          stopBounty();
+        }
+      }}
+      className={`w-20 h-20 rounded-full flex items-center justify-center text-white text-2xl font-bold shadow-lg transition-colors border border-white/20 ${
+        isPlaying 
+          ? 'bg-green-500/30 hover:bg-green-500/40' 
+          : 'bg-red-500/30 hover:bg-red-500/40'
+      }`}
+    >
+      E
+    </motion.button>
+  )}
 </div>
 
 {/* Bouncing sprite */}
@@ -1118,20 +1233,20 @@ useEffect(() => {
 <AnimatePresence>
   {showBountyModal && (
     <BountyModal
-      isOpen={showBountyModal}
-      onClose={() => setShowBountyModal(false)}
-      onSave={handleBountySave}
-      initialImage={bountyImage}
-      initialText={bountyText}
-      initialDuration={bountyDuration}
-      initialInterval={bountyInterval}
-    />
+  isOpen={showBountyModal}
+  onClose={() => setShowBountyModal(false)}
+  onSave={handleBountySave}
+  onDelete={handleBountyDelete}
+  bounties={bounties}
+  currentBountyIndex={currentBountyIndex}
+  setCurrentBountyIndex={setCurrentBountyIndex} // Add this line
+/>
   )}
 </AnimatePresence>
 
-  {/* Bounty Display */}
- <AnimatePresence>
-  {showBounty && (
+{/* Bounty Display */}
+<AnimatePresence>
+  {showBounty && bounties[currentBountyIndex] && (
     <motion.div
       initial={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
@@ -1139,18 +1254,14 @@ useEffect(() => {
       className="fixed inset-0 z-30 flex items-center justify-center pointer-events-none"
     >
       <div className="bg-black/70 backdrop-blur-sm p-6 rounded-xl">
-        {bountyImage && (
-          <img 
-            src={bountyImage} 
-            alt="Bounty" 
-            className="max-w-md max-h-96 object-contain mb-4"
-          />
-        )}
-        {bountyText && (
-          <div className="text-3xl font-bold text-white text-center">
-            {bountyText}
-          </div>
-        )}
+        <img 
+          src={bounties[currentBountyIndex].image} 
+          alt="Bounty" 
+          className="max-w-md max-h-96 object-contain mb-4"
+        />
+        <div className="text-3xl font-bold text-white text-center">
+          {bounties[currentBountyIndex].text}
+        </div>
       </div>
     </motion.div>
   )}
