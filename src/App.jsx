@@ -3,8 +3,6 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch'
 import { useState, useEffect, useRef, useCallback } from 'react'
 
-// Add this BountyModal component at the top of your file, before the App component
-// Replace the entire BountyModal component at the top of your file
 const BountyModal = ({ 
   isOpen, 
   onClose, 
@@ -22,6 +20,7 @@ const BountyModal = ({
   })
 
   const [selectedBountyIndex, setSelectedBountyIndex] = useState(currentBountyIndex)
+  const [isNewBounty, setIsNewBounty] = useState(false)
 
   useEffect(() => {
     if (isOpen) {
@@ -48,30 +47,38 @@ const BountyModal = ({
     }
   }, [])
 
-const handleAddNew = () => {
-  // First save current state if it has content
-  if (localState.image || localState.text.trim()) {
-    onSave(selectedBountyIndex, localState);
+  const handleAddNew = () => {
+    setIsNewBounty(true)
+    const newIndex = bounties.length
+    setSelectedBountyIndex(newIndex)
+    setLocalState({
+      image: null,
+      text: '',
+      duration: 5,
+      interval: 10
+    })
   }
-  
-  // Create new empty state and select it
-  const newIndex = bounties.length;
-  setSelectedBountyIndex(newIndex);
-  setLocalState({
-    image: null,
-    text: '',
-    duration: 5,
-    interval: 10
-  });
-};
 
-const handleSelect = () => {
-  if (localState.image || localState.text.trim()) {
-    onSave(selectedBountyIndex, localState);
-    setCurrentBountyIndex(selectedBountyIndex);
+  const handleSaveNew = () => {
+    if (localState.image || localState.text.trim()) {
+      onSave(bounties.length, localState)
+      setIsNewBounty(false)
+      // Create another empty state for the next new bounty
+      setLocalState({
+        image: null,
+        text: '',
+        duration: 5,
+        interval: 10
+      })
+    }
   }
-};
 
+  const handleSelect = () => {
+    if (localState.image || localState.text.trim()) {
+      onSave(selectedBountyIndex, localState)
+      setCurrentBountyIndex(selectedBountyIndex)
+    }
+  }
 
   if (!isOpen) return null
 
@@ -97,9 +104,12 @@ const handleSelect = () => {
           {bounties.map((bounty, index) => (
             <button
               key={index}
-              onClick={() => setSelectedBountyIndex(index)}
+              onClick={() => {
+                setSelectedBountyIndex(index)
+                setIsNewBounty(false)
+              }}
               className={`px-3 py-1 rounded ${
-                selectedBountyIndex === index 
+                selectedBountyIndex === index && !isNewBounty
                   ? 'bg-purple-500' 
                   : 'bg-purple-800/50'
               } text-white hover:bg-purple-700 transition-colors`}
@@ -107,18 +117,20 @@ const handleSelect = () => {
               {index + 1}
             </button>
           ))}
-          <button
-            onClick={handleAddNew}
-            className="px-3 py-1 rounded bg-purple-800/50 hover:bg-purple-700/50 text-white"
-          >
-            +
-          </button>
+          {!isNewBounty && (
+            <button
+              onClick={handleAddNew}
+              className="px-3 py-1 rounded bg-purple-800/50 hover:bg-purple-700/50 text-white"
+            >
+              +
+            </button>
+          )}
         </div>
 
         {/* Image Upload */}
         <div className="mb-4">
           <label className="block text-white mb-2">
-            Bounty Image {selectedBountyIndex + 1}
+            Bounty Image {isNewBounty ? 'New' : selectedBountyIndex + 1}
           </label>
           <div className="h-40 bg-purple-800/50 rounded-lg overflow-hidden">
             {localState.image ? (
@@ -142,7 +154,7 @@ const handleSelect = () => {
               </div>
             ) : (
               <label className="w-full h-full flex items-center justify-center cursor-pointer hover:bg-purple-700/50 transition-colors">
-                <span className="text-white">Click to Upload Image {selectedBountyIndex + 1}</span>
+                <span className="text-white">Click to Upload Image {isNewBounty ? 'New' : selectedBountyIndex + 1}</span>
                 <input
                   type="file"
                   accept="image/*"
@@ -200,33 +212,42 @@ const handleSelect = () => {
 
         {/* Action Buttons */}
         <div className="flex justify-between gap-3">
-  {bounties[selectedBountyIndex] && (
-    <button
-      onClick={() => onDelete(selectedBountyIndex)}
-      className="px-4 py-2 bg-red-500/50 text-white rounded-lg hover:bg-red-600/50 transition-colors"
-    >
-      Delete
-    </button>
-  )}
-  <div className="flex gap-3 ml-auto">
-    <button
-      onClick={onClose}
-      className="px-4 py-2 bg-purple-800/50 text-white rounded-lg hover:bg-purple-700/50 transition-colors"
-    >
-      Close
-    </button>
-    <button 
-      onClick={handleSelect}
-      className={`px-4 py-2 text-white rounded-lg transition-colors ${
-        selectedBountyIndex === currentBountyIndex
-          ? 'bg-green-500 hover:bg-green-600'
-          : 'bg-purple-500 hover:bg-purple-600'
-      }`}
-    >
-      {selectedBountyIndex === currentBountyIndex ? 'Selected' : 'Select'}
-    </button>
-  </div>
-</div>
+          {!isNewBounty && bounties[selectedBountyIndex] && (
+            <button
+              onClick={() => onDelete(selectedBountyIndex)}
+              className="px-4 py-2 bg-red-500/50 text-white rounded-lg hover:bg-red-600/50 transition-colors"
+            >
+              Delete
+            </button>
+          )}
+          <div className="flex gap-3 ml-auto">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 bg-purple-800/50 text-white rounded-lg hover:bg-purple-700/50 transition-colors"
+            >
+              Close
+            </button>
+            {isNewBounty ? (
+              <button 
+                onClick={handleSaveNew}
+                className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors"
+              >
+                Save
+              </button>
+            ) : (
+              <button 
+                onClick={handleSelect}
+                className={`px-4 py-2 text-white rounded-lg transition-colors ${
+                  selectedBountyIndex === currentBountyIndex
+                    ? 'bg-green-500 hover:bg-green-600'
+                    : 'bg-purple-500 hover:bg-purple-600'
+                }`}
+              >
+                {selectedBountyIndex === currentBountyIndex ? 'Selected' : 'Select'}
+              </button>
+            )}
+          </div>
+        </div>
       </motion.div>
     </motion.div>
   )
