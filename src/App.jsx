@@ -258,6 +258,7 @@ const handleSelect = () => {
 
 function App() {
   // State declarations
+  const [showProbCalc, setShowProbCalc] = useState(false);
   const [currentView, setCurrentView] = useState('bags')
   const [insuranceImages, setInsuranceImages] = useState([null, null, null, null, null])
   const [currentInsuranceIndex, setCurrentInsuranceIndex] = useState(0)
@@ -284,7 +285,7 @@ function App() {
   const [useStoneStyle, setUseStoneStyle] = useState(false);
   const [spriteActive, setSpriteActive] = useState(false)
   const [showBountyModal, setShowBountyModal] = useState(false)
-  const [shimmerActive, setShimmerActive] = useState(false)
+  const [shimmerActive, setShimmerActive] = useState(true)
   const [showMinusPopup, setShowMinusPopup] = useState(false);
 const [showPlusPopup, setShowPlusPopup] = useState(false);
 const [bounties, setBounties] = useState([])
@@ -296,6 +297,126 @@ const [currentBountyIndex, setCurrentBountyIndex] = useState(0)
   const [showBounty, setShowBounty] = useState(false)
   const [isPlaying, setIsPlaying] = useState(false)
   const animationFrameId = useRef(null)
+
+  const ProbabilityCalculator = ({ isOpen, onClose, totalBags, totalChases }) => {
+  const [bagsDrawn, setBagsDrawn] = useState(3);
+  const [chasesHit, setChasesHit] = useState(2);
+
+  // Prevent clicks inside modal from closing it
+  const handleModalClick = (e) => {
+    e.stopPropagation();
+  };
+
+  const calculateProbability = (n, k) => {
+    // n = bags drawn, k = chases wanted
+    const N = totalBags; // total bags
+    const K = totalChases; // total chases
+    
+    // Calculate combinations
+    const numerator = combination(K, k) * combination(N - K, n - k);
+    const denominator = combination(N, n);
+    
+    return (numerator / denominator * 100).toFixed(2);
+  };
+
+  const combination = (n, r) => {
+    if (r > n) return 0;
+    if (r === 0) return 1;
+    return factorial(n) / (factorial(r) * factorial(n - r));
+  };
+
+  const factorial = (n) => {
+    if (n === 0) return 1;
+    let result = 1;
+    for (let i = 1; i <= n; i++) {
+      result *= i;
+    }
+    return result;
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.9, opacity: 0 }}
+        className="w-96 bg-gradient-to-br from-blue-900/90 to-blue-700/90 rounded-xl p-6 shadow-xl border border-blue-500/30"
+        onClick={handleModalClick}
+      >
+        <h2 className="text-2xl font-bold text-white mb-6">Probability Calculator</h2>
+        
+        <div className="space-y-6">
+          {/* Current Stats */}
+          <div className="bg-black/20 p-4 rounded-lg">
+            <p className="text-white mb-2">Total Bags: {totalBags}</p>
+            <p className="text-white">Total Chases: {totalChases}</p>
+          </div>
+
+          {/* Common Scenarios */}
+          <div className="bg-black/20 p-4 rounded-lg space-y-2">
+            <h3 className="text-white font-bold mb-3">Common Scenarios:</h3>
+            <p className="text-white">0/2: {calculateProbability(2, 0)}%</p>
+            <p className="text-white">0/3: {calculateProbability(3, 0)}%</p>
+            <p className="text-white">1/3: {calculateProbability(3, 1)}%</p>
+            <p className="text-white">2/3: {calculateProbability(3, 2)}%</p>
+            <p className="text-white">3/3: {calculateProbability(3, 3)}%</p>
+          </div>
+
+         {/* Custom Calculator */}
+<div className="bg-black/20 p-4 rounded-lg space-y-4">
+  <h3 className="text-white font-bold">Custom Calculator:</h3>
+  <div className="flex gap-4">
+    <div className="flex-1">
+      <label className="text-white text-sm">Chases Hit</label>
+      <input
+        type="number"
+        value={chasesHit}
+        onChange={(e) => {
+          const value = e.target.value === '' ? '' : parseInt(e.target.value);
+          setChasesHit(value === '' ? 0 : Math.min(totalChases, Math.max(0, value)));
+        }}
+        className="w-full px-3 py-2 bg-blue-800/50 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+      />
+    </div>
+    <div className="flex-1">
+      <label className="text-white text-sm">Bags Bought</label>
+      <input
+        type="number"
+        value={bagsDrawn}
+        onChange={(e) => {
+          const value = e.target.value === '' ? '' : parseInt(e.target.value);
+          setBagsDrawn(value === '' ? 0 : Math.min(totalBags, Math.max(0, value)));
+        }}
+        className="w-full px-3 py-2 bg-blue-800/50 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+      />
+    </div>
+  </div>
+  <div className="bg-black/30 p-3 rounded-lg">
+    <p className="text-white text-center">
+      Probability: {calculateProbability(bagsDrawn, chasesHit)}%
+    </p>
+  </div>
+</div>
+        </div>
+
+        <button
+          onClick={onClose}
+          className="mt-6 w-full px-4 py-2 bg-blue-600/50 hover:bg-blue-500/50 text-white rounded-lg transition-colors"
+        >
+          Close
+        </button>
+      </motion.div>
+    </motion.div>
+  );
+};
 
   const toggleSprite = () => {
   setSpriteActive(!spriteActive)
@@ -782,6 +903,7 @@ useEffect(() => {
         setMarks(parsedState.marks || [])
         setMarkSize(parsedState.markSize || 4)
         setUseStoneStyle(parsedState.useStoneStyle || false)
+        setShimmerActive(parsedState.shimmerActive !== undefined ? parsedState.shimmerActive : true)
       } else {
         setBagCount(50)
         setChaseCount(8)
@@ -823,7 +945,8 @@ useEffect(() => {
         remainingChases,
         marks,
         markSize,
-        useStoneStyle
+        useStoneStyle,
+        shimmerActive
       }
       localStorage.setItem('gachaBagState', JSON.stringify(stateToSave))
     } catch (error) {
@@ -926,29 +1049,49 @@ useEffect(() => {
     Insurance
   </button>
 </div>
-            <div className="flex items-center justify-center gap-4 mb-2">
-              <img 
-                src="/pokegoons-logo.png" 
-                alt="PokeGoons Logo" 
-                className="w-20 h-20 object-contain animate-pulse"
-                style={{ animationDuration: '3s' }}
-              />
-              <h1 className="text-4xl font-black text-transparent bg-clip-text relative">
-                <span className="absolute inset-0 text-4xl font-black text-white blur-sm">
-                  POKEGOONS BAGS
-                </span>
-                <span className="relative animate-gradient-x bg-gradient-to-r from-blue-400 via-teal-500 to-green-600 bg-clip-text text-transparent">
-                  POKEGOONS BAGS
-                </span>
-              </h1>
-              <img 
-                src="/pokegoons-logo.png" 
-                alt="PokeGoons Logo" 
-                className="w-20 h-20 object-contain animate-pulse"
-                style={{ animationDuration: '3s' }}
-              />
-            </div>
-
+           <div className="flex items-center justify-center gap-4 mb-2">
+  <img 
+    src="/pokegoons-logo.png" 
+    alt="PokeGoons Logo" 
+    className="w-20 h-20 object-contain animate-pulse"
+    style={{ animationDuration: '3s' }}
+  />
+  <h1 className="text-4xl font-black text-transparent bg-clip-text relative">
+    <span className="absolute inset-0 text-4xl font-black text-white blur-sm">
+      POKEGOONS BAGS
+    </span>
+    <span className="relative animate-gradient-x bg-gradient-to-r from-blue-400 via-teal-500 to-green-600 bg-clip-text text-transparent">
+      POKEGOONS BAGS
+    </span>
+  </h1>
+  <motion.div
+    whileHover={{ scale: 1.1 }}
+    whileTap={{ scale: 0.9 }}
+    onClick={() => setShowProbCalc(true)}
+    className="w-20 h-20 cursor-pointer relative group"
+  >
+    <img 
+      src="/pokegoons-logo.png" 
+      alt="Probability Calculator" 
+      className="w-full h-20 object-contain animate-pulse group-hover:opacity-80 transition-opacity"
+      style={{ animationDuration: '3s' }}
+    />
+    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+      <span className="text-2xl font-bold text-white">%</span>
+    </div>
+  </motion.div>
+</div>
+{/* Add the AnimatePresence right here */}
+<AnimatePresence>
+  {showProbCalc && (
+    <ProbabilityCalculator
+      isOpen={showProbCalc}
+      onClose={() => setShowProbCalc(false)}
+      totalBags={bagCount}
+      totalChases={chaseCount}
+    />
+  )}
+</AnimatePresence>
             <AnimatePresence mode="wait">
               {isEditMode && (
   <motion.div
