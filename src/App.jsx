@@ -1,6 +1,171 @@
-import { useState, useEffect, useRef } from 'react'
+
 import { motion, AnimatePresence } from 'framer-motion'
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch'
+import { useState, useEffect, useRef, useCallback } from 'react'
+
+// Add this BountyModal component at the top of your file, before the App component
+// Replace the entire BountyModal component at the top of your file
+const BountyModal = ({ 
+  isOpen, 
+  onClose, 
+  onSave, 
+  initialImage, 
+  initialText, 
+  initialDuration,
+  initialInterval
+}) => {
+  const [localState, setLocalState] = useState({
+    image: initialImage,
+    text: initialText,
+    duration: initialDuration,
+    interval: initialInterval
+  })
+
+  // Reset local state when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setLocalState({
+        image: initialImage,
+        text: initialText,
+        duration: initialDuration,
+        interval: initialInterval
+      })
+    }
+  }, [isOpen, initialImage, initialText, initialDuration, initialInterval])
+
+  const handleImageUpload = useCallback((e) => {
+    const file = e.target.files[0]
+    if (file) {
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        setLocalState(prev => ({
+          ...prev,
+          image: e.target.result
+        }))
+      }
+      reader.readAsDataURL(file)
+    }
+  }, [])
+
+  const handleSave = useCallback(() => {
+    onSave(localState)
+  }, [localState, onSave])
+
+  if (!isOpen) return null
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center"
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
+      <motion.div
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.9, opacity: 0 }}
+        className="w-1/4 min-w-[300px] bg-gradient-to-br from-purple-900/90 to-purple-700/90 rounded-xl p-6 shadow-xl border border-purple-500/30"
+        onClick={e => e.stopPropagation()}
+      >
+        <h2 className="text-2xl font-bold text-white mb-4">Bounty Settings</h2>
+        
+        <div className="mb-4">
+          <label className="block text-white mb-2">Bounty Image</label>
+          <div className="h-40 bg-purple-800/50 rounded-lg overflow-hidden">
+            {localState.image ? (
+              <div className="relative w-full h-full group">
+                <img 
+                  src={localState.image} 
+                  alt="Bounty Preview" 
+                  className="w-full h-full object-contain"
+                />
+                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                  <label className="cursor-pointer text-white hover:text-purple-300 transition-colors">
+                    Change Image
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+              </div>
+            ) : (
+              <label className="w-full h-full flex items-center justify-center cursor-pointer hover:bg-purple-700/50 transition-colors">
+                <span className="text-white">Click to Upload Image</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  className="hidden"
+                />
+              </label>
+            )}
+          </div>
+        </div>
+
+        <div className="mb-4">
+          <label className="block text-white mb-2">Bounty Text</label>
+          <input
+            type="text"
+            value={localState.text}
+            onChange={(e) => setLocalState(prev => ({ ...prev, text: e.target.value }))}
+            className="w-full px-3 py-2 bg-purple-800/50 rounded-lg text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500"
+            placeholder="Enter text (e.g., 0/2)"
+          />
+        </div>
+
+        <div className="mb-4">
+          <label className="block text-white mb-2">Display Duration (seconds)</label>
+          <div className="flex items-center gap-4">
+            <input
+              type="range"
+              min="1"
+              max="10"
+              value={localState.duration}
+              onChange={(e) => setLocalState(prev => ({ ...prev, duration: Number(e.target.value) }))}
+              className="flex-1 h-2 bg-purple-800/50 rounded-lg appearance-none cursor-pointer"
+            />
+            <span className="text-white w-8 text-center">{localState.duration}s</span>
+          </div>
+        </div>
+
+        <div className="mb-6">
+          <label className="block text-white mb-2">Display Interval (seconds)</label>
+          <div className="flex items-center gap-4">
+            <input
+              type="range"
+              min="5"
+              max="30"
+              value={localState.interval}
+              onChange={(e) => setLocalState(prev => ({ ...prev, interval: Number(e.target.value) }))}
+              className="flex-1 h-2 bg-purple-800/50 rounded-lg appearance-none cursor-pointer"
+            />
+            <span className="text-white w-8 text-center">{localState.interval}s</span>
+          </div>
+        </div>
+
+        <div className="flex justify-end gap-3">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 bg-purple-800/50 text-white rounded-lg hover:bg-purple-700/50 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors"
+          >
+            Save
+          </button>
+        </div>
+      </motion.div>
+    </motion.div>
+  )
+}
+
 
 function App() {
   // State declarations
@@ -27,8 +192,31 @@ function App() {
   const [controlsVisible, setControlsVisible] = useState(true)
   const controlsTimeout = useRef(null)
   const imageContainerRef = useRef(null)
+  const [spriteActive, setSpriteActive] = useState(false)
+  const [showBountyModal, setShowBountyModal] = useState(false)
+  const [bountyImage, setBountyImage] = useState(null)
+  const [bountyText, setBountyText] = useState('')
+  const [bountyDuration, setBountyDuration] = useState(5)
+  const [bountyInterval, setBountyInterval] = useState(10)
+  const [bountyActive, setBountyActive] = useState(false)
+  const [showBounty, setShowBounty] = useState(false)
+  const [isPlaying, setIsPlaying] = useState(false)
+  const animationFrameId = useRef(null)
+  const toggleSprite = () => {
+  setSpriteActive(!spriteActive)
+}
+  const spriteRef = useRef({
+    x: window.innerWidth / 2,
+    y: window.innerHeight / 2,
+    dx: 5,
+    dy: 5,
+    rotation: 0
+  })
   
-  
+  // Add these refs to your existing refs
+const bountyIntervalRef = useRef(null)
+const bountyTimeout = useRef(null)
+
   const [zoomState, setZoomState] = useState(() => {
     const saved = localStorage.getItem('gachaBagZoomState')
     return saved ? JSON.parse(saved) : {
@@ -37,6 +225,56 @@ function App() {
       positionY: 0
     }
   })
+
+  // Add these helper functions inside your App component
+const startBounty = () => {
+  if (bountyIntervalRef.current) {
+    clearInterval(bountyIntervalRef.current)
+  }
+  if (bountyTimeout.current) {
+    clearTimeout(bountyTimeout.current)
+  }
+
+  setBountyActive(true)
+  setShowBounty(true)
+  
+  bountyTimeout.current = setTimeout(() => {
+    setShowBounty(false)
+  }, bountyDuration * 1000)
+
+  bountyIntervalRef.current = setInterval(() => {
+    setShowBounty(true)
+    bountyTimeout.current = setTimeout(() => {
+      setShowBounty(false)
+    }, bountyDuration * 1000)
+  }, bountyInterval * 1000)
+}
+
+const stopBounty = () => {
+  setBountyActive(false)
+  if (bountyIntervalRef.current) {
+    clearInterval(bountyIntervalRef.current)
+  }
+  if (bountyTimeout.current) {
+    clearTimeout(bountyTimeout.current)
+  }
+  setShowBounty(false)
+}
+
+const handleBountySave = (settings) => {
+  setBountyImage(settings.image);
+  setBountyText(settings.text);
+  setBountyDuration(settings.duration);
+  setBountyInterval(settings.interval);
+  setShowBountyModal(false);
+  
+  if (isPlaying) {
+    stopBounty();
+    setTimeout(() => {
+      startBounty();
+    }, 100);
+  }
+};
 
   // Helper function for insurance navigation
   const getNextValidIndex = (currentIndex, direction) => {
@@ -225,6 +463,64 @@ const handleImageClick = (e) => {
   }
 
   // Effects
+  // Add this useEffect to your App component
+useEffect(() => {
+  if (isPlaying && bountyImage) {
+    startBounty();
+  } else {
+    stopBounty();
+  }
+}, [isPlaying]);
+  // Sprite animation
+useEffect(() => {
+  if (!spriteActive || showBountyModal) {
+    if (animationFrameId.current) {
+      cancelAnimationFrame(animationFrameId.current)
+    }
+    return
+  }
+
+  const animate = () => {
+    const sprite = spriteRef.current
+    
+    // Update position
+    sprite.x += sprite.dx
+    sprite.y += sprite.dy
+    
+    // Bounce off walls
+    if (sprite.x <= 0 || sprite.x >= window.innerWidth - 100) {
+      sprite.dx *= -1
+      sprite.rotation = Math.random() * 360
+    }
+    if (sprite.y <= 0 || sprite.y >= window.innerHeight - 100) {
+      sprite.dy *= -1
+      sprite.rotation = Math.random() * 360
+    }
+
+    // Random direction changes
+    if (Math.random() < 0.02) {
+      sprite.dx = (Math.random() - 0.5) * 10
+      sprite.dy = (Math.random() - 0.5) * 10
+    }
+
+    // Update DOM element
+    const spriteElement = document.getElementById('bouncing-sprite')
+    if (spriteElement) {
+      spriteElement.style.transform = `translate(${sprite.x}px, ${sprite.y}px) rotate(${sprite.rotation}deg)`
+    }
+
+    animationFrameId.current = requestAnimationFrame(animate)
+  }
+
+  animate()
+
+  return () => {
+    if (animationFrameId.current) {
+      cancelAnimationFrame(animationFrameId.current)
+    }
+  }
+}, [spriteActive, showBountyModal])
+
   useEffect(() => {
     const hasImages = insuranceImages.some(img => img !== null);
     setHasInsuranceImages(hasImages);
@@ -245,6 +541,18 @@ const handleImageClick = (e) => {
     return () => {
       window.removeEventListener('orientationchange', handleOrientationChange)
       window.removeEventListener('resize', handleOrientationChange)
+    }
+  }, [])
+
+  // Add these to your existing useEffect cleanup
+  useEffect(() => {
+    return () => {
+      if (bountyIntervalRef.current) {
+        clearInterval(bountyIntervalRef.current)
+      }
+      if (bountyTimeout.current) {
+        clearTimeout(bountyTimeout.current)
+      }
     }
   }, [])
 
@@ -598,61 +906,22 @@ const handleImageClick = (e) => {
           </div>
         ) : currentView === 'chases' ? (
           <div className="relative h-[100dvh] max-h-[100dvh] w-full overflow-hidden">
-            <div className="absolute top-safe-4 left-4 z-[60] flex gap-2">
-              <button
-                onClick={() => setCurrentView('bags')}
-                className="px-6 py-3 bg-blue-900/40 hover:bg-blue-800/50 text-white rounded-lg transition-colors text-lg md:text-xl"
-              >
-                Show Bags
-              </button>
-              <button
-                onClick={() => setCurrentView('insurance')}
-                className="px-6 py-3 bg-purple-900/40 hover:bg-purple-800/50 text-white rounded-lg transition-colors text-lg md:text-xl"
-              >
-                Show Insurance
-              </button>
-            </div>
-{/* Chases title animation */}
-           <>
-{/* Chases Count Overlay */}
-<AnimatePresence>
-  {!controlsVisible && (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="absolute top-safe-4 left-[400px] z-40 pointer-events-none"
+  {/* Top navigation buttons */}
+  <div className="absolute top-safe-4 left-4 z-[60] flex gap-2">
+    <button
+      onClick={() => setCurrentView('bags')}
+      className="px-6 py-3 bg-blue-900/40 hover:bg-blue-800/50 text-white rounded-lg transition-colors text-lg md:text-xl"
     >
-      <div 
-        className="flex items-center gap-2 bg-black/50 backdrop-blur-md rounded-lg px-4 py-2" // Increased padding
-        style={{ 
-          border: '1px solid rgba(255, 255, 255, 0.5)',
-        }}
-      >
-        <h1 
-          className="text-3xl font-black italic tracking-wider" // Increased from text-xl to text-3xl
-          style={{ 
-            fontFamily: 'Arial Black, Arial, sans-serif',
-            color: 'white',
-            textShadow: `
-              -2px -2px 0 #000,  
-               2px -2px 0 #000,
-              -2px  2px 0 #000,
-               2px  2px 0 #000,
-               3px  3px 0 rgba(0,0,0,0.5)
-            ` // Increased shadow size to match larger text
-          }}
-        >
-          {bagCount - selectedNumbers.size} Bags / Hit Ratio: {calculateHitRatio()}
-        </h1>
-      </div>
-    </motion.div>
-  )}
-</AnimatePresence>
-
-
-
-{/* Chases Controls - Hide with timeout */}
+      Show Bags
+    </button>
+    <button
+      onClick={() => setCurrentView('insurance')}
+      className="px-6 py-3 bg-purple-900/40 hover:bg-purple-800/50 text-white rounded-lg transition-colors text-lg md:text-xl"
+    >
+      Show Insurance
+    </button>
+  </div>
+{/* Marker Controls - Only show when controls are visible */}
 <AnimatePresence>
   {controlsVisible && (
     <motion.div
@@ -685,77 +954,208 @@ const handleImageClick = (e) => {
     </motion.div>
   )}
 </AnimatePresence>
-</>
 
-            <div className="h-full w-full">
-              {prizeImage ? (
-                <TransformWrapper
-                  initialScale={zoomState.scale}
-                  initialPositionX={zoomState.positionX}
-                  initialPositionY={zoomState.positionY}
-                  onTransformed={(e) => {
-                    const newZoomState = {
-                      scale: e.state.scale,
-                      positionX: e.state.positionX,
-                      positionY: e.state.positionY
-                    }
-                    setZoomState(newZoomState)
-                    localStorage.setItem('gachaBagZoomState', JSON.stringify(newZoomState))
-                  }}
-                  minScale={0.5}
-                  maxScale={4}
-                  doubleClick={{ mode: "reset" }}
-                  wheel={{ step: 0.1 }}
-                >
-                  <TransformComponent
-                    wrapperClass="!w-full !h-full"
-                    contentClass="!w-full !h-full"
-                  >
-                    <div 
-                      className="relative w-full h-full" 
-                      onClick={handleImageClick}
-                      ref={imageContainerRef}
-                    >
-                      <img
-                        src={prizeImage}
-                        alt="Top Chases"
-                        className="w-full h-full object-contain"
-                      />
-{marks.map((mark, index) => (
+{/* Vertical controls container */}
+<div className="absolute left-4 top-[100px] z-50 flex flex-col gap-4 bg-transparent backdrop-blur-none p-4 rounded-xl border-2 border-white/20">
+  {/* Blastoise toggle button - More transparent */}
   <motion.div
-    key={index}
-    className="absolute text-blue-400 font-bold pointer-events-none"
-    style={{ 
-      left: `${mark.x}%`,
-      top: `${mark.y}%`,
-      fontSize: `${mark.size || markSize}rem`,
-      filter: 'drop-shadow(0 0 4px rgba(255, 255, 255, 0.5))'
-    }}
+    onClick={toggleSprite}
+    className="cursor-pointer bg-black/10 rounded-full p-2"
+  >
+    <img 
+      src="/61.gif"
+      alt="Blastoise"
+      className={`w-16 h-16 object-contain opacity-40 hover:opacity-80 transition-opacity ${
+        spriteActive ? 'ring-4 ring-purple-500/50 ring-opacity-50 rounded-full' : ''
+      }`}
+    />
+  </motion.div>
+
+  {/* Bounty Button */}
+  <motion.button
+    whileHover={{ scale: 1.1 }}
+    whileTap={{ scale: 0.9 }}
+    onClick={() => setShowBountyModal(true)}
+    className="w-20 h-20 bg-black/20 rounded-full flex items-center justify-center text-white text-2xl font-bold shadow-lg hover:bg-black/30 transition-colors border border-white/20"
+  >
+    B
+  </motion.button>
+{/* Play/Pause Button - Just colors, no icons */}
+<motion.button
+  whileHover={{ scale: 1.1 }}
+  whileTap={{ scale: 0.9 }}
+  onClick={() => {
+    setIsPlaying(!isPlaying);
+    if (!isPlaying) {
+      startBounty();
+    } else {
+      stopBounty();
+    }
+  }}
+  className={`w-20 h-20 ${
+    isPlaying 
+      ? 'bg-green-500/30 hover:bg-green-500/40' 
+      : 'bg-red-500/30 hover:bg-red-500/40'
+  } rounded-full flex items-center justify-center text-white shadow-lg transition-all border border-white/20`}
+/>
+</div>
+
+{/* Bouncing sprite */}
+{spriteActive && (
+  <motion.div
+    id="bouncing-sprite"
+    className="fixed z-20 w-20 h-20"
     initial={{ scale: 0 }}
     animate={{ scale: 1 }}
+    exit={{ scale: 0 }}
   >
-    ✕
+    <img 
+      src="/bullseye.png"
+      alt="Target"
+      className="w-full h-full object-contain opacity-80"
+    />
   </motion.div>
-))}
-                    </div>
-                  </TransformComponent>
-                </TransformWrapper>
-              ) : (
-                <div className="w-full h-full bg-blue-900/20 backdrop-blur-sm rounded-lg flex items-center justify-center text-white">
-                  <label className="cursor-pointer hover:text-blue-200 transition-colors text-lg md:text-xl">
-                    <span className="sr-only">Upload a top chases image</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageUpload}
-                      className="hidden"
-                    />
-                    Upload a top chases image
-                  </label>
-                </div>
-              )}
-            </div>
+)}
+
+
+
+  {/* Chases Count Overlay */}
+  <AnimatePresence>
+    {!controlsVisible && (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="absolute top-safe-4 left-[400px] z-40 pointer-events-none"
+      >
+        <div className="flex items-center gap-2 bg-black/50 backdrop-blur-md rounded-lg px-4 py-2">
+          <h1 
+            className="text-3xl font-black italic tracking-wider"
+            style={{ 
+              fontFamily: 'Arial Black, Arial, sans-serif',
+              color: 'white',
+              textShadow: '-2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000, 3px 3px 0 rgba(0,0,0,0.5)'
+            }}
+          >
+            {bagCount - selectedNumbers.size} Bags / Hit Ratio: {calculateHitRatio()}
+          </h1>
+        </div>
+      </motion.div>
+    )}
+  </AnimatePresence>
+
+  {/* Main content area */}
+  <div className="h-full w-full">
+    {prizeImage ? (
+      <TransformWrapper
+        initialScale={zoomState.scale}
+        initialPositionX={zoomState.positionX}
+        initialPositionY={zoomState.positionY}
+        onTransformed={(e) => {
+          const newZoomState = {
+            scale: e.state.scale,
+            positionX: e.state.positionX,
+            positionY: e.state.positionY
+          }
+          setZoomState(newZoomState)
+          localStorage.setItem('gachaBagZoomState', JSON.stringify(newZoomState))
+        }}
+        minScale={0.5}
+        maxScale={4}
+        doubleClick={{ mode: "reset" }}
+        wheel={{ step: 0.1 }}
+      >
+        <TransformComponent
+          wrapperClass="!w-full !h-full"
+          contentClass="!w-full !h-full"
+        >
+          <div 
+            className="relative w-full h-full" 
+            onClick={handleImageClick}
+            ref={imageContainerRef}
+          >
+            <img
+              src={prizeImage}
+              alt="Top Chases"
+              className="w-full h-full object-contain"
+            />
+            {marks.map((mark, index) => (
+              <motion.div
+                key={index}
+                className="absolute text-blue-400 font-bold pointer-events-none"
+                style={{ 
+                  left: `${mark.x}%`,
+                  top: `${mark.y}%`,
+                  fontSize: `${mark.size || markSize}rem`,
+                  filter: 'drop-shadow(0 0 4px rgba(255, 255, 255, 0.5))'
+                }}
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+              >
+                ✕
+              </motion.div>
+            ))}
           </div>
+        </TransformComponent>
+      </TransformWrapper>
+    ) : (
+      <div className="w-full h-full bg-blue-900/20 backdrop-blur-sm rounded-lg flex items-center justify-center text-white">
+        <label className="cursor-pointer hover:text-blue-200 transition-colors text-lg md:text-xl">
+          <span className="sr-only">Upload a top chases image</span>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={handleImageUpload}
+            className="hidden"
+          />
+          Upload a top chases image
+        </label>
+      </div>
+    )}
+  </div>
+
+{/* Bounty Modal */}
+<AnimatePresence>
+  {showBountyModal && (
+    <BountyModal
+      isOpen={showBountyModal}
+      onClose={() => setShowBountyModal(false)}
+      onSave={handleBountySave}
+      initialImage={bountyImage}
+      initialText={bountyText}
+      initialDuration={bountyDuration}
+      initialInterval={bountyInterval}
+    />
+  )}
+</AnimatePresence>
+
+  {/* Bounty Display */}
+ <AnimatePresence>
+  {showBounty && (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.9 }}
+      className="fixed inset-0 z-30 flex items-center justify-center pointer-events-none"
+    >
+      <div className="bg-black/70 backdrop-blur-sm p-6 rounded-xl">
+        {bountyImage && (
+          <img 
+            src={bountyImage} 
+            alt="Bounty" 
+            className="max-w-md max-h-96 object-contain mb-4"
+          />
+        )}
+        {bountyText && (
+          <div className="text-3xl font-bold text-white text-center">
+            {bountyText}
+          </div>
+        )}
+      </div>
+    </motion.div>
+  )}
+</AnimatePresence>
+</div>
         ) : (
           <div className="relative h-[100dvh] max-h-[100dvh] w-full overflow-hidden">
   <div className="absolute top-safe-4 left-4 z-[60] flex gap-2">
