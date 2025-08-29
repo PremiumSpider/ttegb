@@ -168,7 +168,7 @@ const handleSelect = () => {
 
         {/* Text Input */}
         <div className="mb-4">
-          <label className="block text-white mb-2">Bounty Text</label>
+          <label className="block text-white mb-2">Bounty Text (Tap Select.. to save)</label>
           <input
             type="text"
             value={localState.text}
