@@ -1216,83 +1216,83 @@ useEffect(() => {
   )}
 </AnimatePresence>
 
-{/* Original Left-side Vertical Controls Container */}
-<div className="absolute left-4 top-[100px] z-50 flex flex-col gap-4 bg-transparent backdrop-blur-none p-4 rounded-xl border-2 border-white/20">
-  {/* Blastoise toggle button */}
-  <motion.div
-    onClick={toggleSprite}
-    className="cursor-pointer bg-black/10 rounded-full p-2"
-  >
-    <img 
-      src="/61.gif"
-      alt="Blastoise"
-      className={`w-16 h-16 object-contain opacity-40 hover:opacity-80 transition-opacity ${
-        spriteActive ? 'ring-4 ring-purple-500/50 ring-opacity-50 rounded-full' : ''
-      }`}
-    />
-  </motion.div>
+{/* Add new Bottom Controls Container */}
+<div className="absolute bottom-4 inset-x-4 z-50 flex justify-between">
+  {/* Left side controls */}
+  <div className="flex gap-4">
+    <motion.div
+      onClick={toggleSprite}
+      className="cursor-pointer bg-black/10 rounded-full p-2"
+    >
+      <img 
+        src="/61.gif"
+        alt="Blastoise"
+        className={`w-16 h-16 object-contain opacity-40 hover:opacity-80 transition-opacity ${
+          spriteActive ? 'ring-4 ring-purple-500/50 ring-opacity-50 rounded-full' : ''
+        }`}
+      />
+    </motion.div>
 
-  {/* Bounty Edit Button */}
-  <motion.button
-    whileHover={{ scale: 1.1 }}
-    whileTap={{ scale: 0.9 }}
-    onClick={() => setShowBountyModal(true)}
-    className="w-20 h-20 bg-black/20 hover:bg-black/30 rounded-full flex items-center justify-center text-white text-2xl font-bold shadow-lg transition-colors border border-white/20"
-  >
-    B
-  </motion.button>
+    <motion.button
+      whileHover={{ scale: 1.1 }}
+      whileTap={{ scale: 0.9 }}
+      onClick={() => setShowBountyModal(true)}
+      className="w-20 h-20 bg-black/20 hover:bg-black/30 rounded-full flex items-center justify-center text-white text-2xl font-bold shadow-lg transition-colors border border-white/20"
+    >
+      B
+    </motion.button>
 
-  {/* Enable/Disable Bounty Button */}
-  {bounties.length > 0 && (
+    {bounties.length > 0 && (
+      <motion.button
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.9 }}
+        onClick={() => {
+          setIsPlaying(!isPlaying);
+          if (!isPlaying) {
+            startBounty();
+          } else {
+            stopBounty();
+          }
+        }}
+        className={`w-20 h-20 rounded-full flex items-center justify-center text-white text-2xl font-bold shadow-lg transition-colors border border-white/20 ${
+          isPlaying 
+            ? 'bg-green-500/30 hover:bg-green-500/40' 
+            : 'bg-red-500/30 hover:bg-red-500/40'
+        }`}
+      >
+        E
+      </motion.button>
+    )}
+  </div>
+
+  {/* Right side controls */}
+  <div className="flex gap-4">
     <motion.button
       whileHover={{ scale: 1.1 }}
       whileTap={{ scale: 0.9 }}
       onClick={() => {
-        setIsPlaying(!isPlaying);
-        if (!isPlaying) {
-          startBounty();
-        } else {
-          stopBounty();
-        }
+        handleChaseCountChange(-1);
+        setShowMinusPopup(true);
+        setTimeout(() => setShowMinusPopup(false), 1000);
       }}
-      className={`w-20 h-20 rounded-full flex items-center justify-center text-white text-2xl font-bold shadow-lg transition-colors border border-white/20 ${
-        isPlaying 
-          ? 'bg-green-500/30 hover:bg-green-500/40' 
-          : 'bg-red-500/30 hover:bg-red-500/40'
-      }`}
+      className="w-20 h-20 bg-black/20 hover:bg-black/30 rounded-full flex items-center justify-center text-white text-xl font-bold shadow-lg transition-colors border border-white/20"
     >
-      E
+      -1C
     </motion.button>
-  )}
-</div>
 
-{/* New Right-side Chase Controls Container */}
-<div className="absolute right-4 top-[100px] z-50 flex flex-col gap-4 bg-transparent backdrop-blur-none p-4 rounded-xl border-2 border-white/20">
-  <motion.button
-    whileHover={{ scale: 1.1 }}
-    whileTap={{ scale: 0.9 }}
-    onClick={() => {
-      handleChaseCountChange(1);
-      setShowPlusPopup(true);
-      setTimeout(() => setShowPlusPopup(false), 1000);
-    }}
-    className="w-20 h-20 bg-black/20 hover:bg-black/30 rounded-full flex items-center justify-center text-white text-xl font-bold shadow-lg transition-colors border border-white/20"
-  >
-    +1C
-  </motion.button>
-
-  <motion.button
-    whileHover={{ scale: 1.1 }}
-    whileTap={{ scale: 0.9 }}
-    onClick={() => {
-      handleChaseCountChange(-1);
-      setShowMinusPopup(true);
-      setTimeout(() => setShowMinusPopup(false), 1000);
-    }}
-    className="w-20 h-20 bg-black/20 hover:bg-black/30 rounded-full flex items-center justify-center text-white text-xl font-bold shadow-lg transition-colors border border-white/20"
-  >
-    -1C
-  </motion.button>
+    <motion.button
+      whileHover={{ scale: 1.1 }}
+      whileTap={{ scale: 0.9 }}
+      onClick={() => {
+        handleChaseCountChange(1);
+        setShowPlusPopup(true);
+        setTimeout(() => setShowPlusPopup(false), 1000);
+      }}
+      className="w-20 h-20 bg-black/20 hover:bg-black/30 rounded-full flex items-center justify-center text-white text-xl font-bold shadow-lg transition-colors border border-white/20"
+    >
+      +1C
+    </motion.button>
+  </div>
 </div>
 
 {/* Add these popups to the chases view */}
