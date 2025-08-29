@@ -283,6 +283,7 @@ function App() {
   const imageContainerRef = useRef(null)
   const [spriteActive, setSpriteActive] = useState(false)
   const [showBountyModal, setShowBountyModal] = useState(false)
+  const [shimmerActive, setShimmerActive] = useState(false)
 const [bounties, setBounties] = useState([])
 const [currentBountyIndex, setCurrentBountyIndex] = useState(0)
   const [bountyText, setBountyText] = useState('')
@@ -292,6 +293,7 @@ const [currentBountyIndex, setCurrentBountyIndex] = useState(0)
   const [showBounty, setShowBounty] = useState(false)
   const [isPlaying, setIsPlaying] = useState(false)
   const animationFrameId = useRef(null)
+
   const toggleSprite = () => {
   setSpriteActive(!spriteActive)
 }
@@ -315,7 +317,42 @@ const bountyTimeout = useRef(null)
       positionY: 0
     }
   })
+const Sparkle = ({ color = "white" }) => {
+  const randomX = Math.random() * 100;
+  const randomY = Math.random() * 100;
+  const randomScale = 0.5 + Math.random() * 0.5;
+  const randomDuration = 1 + Math.random() * 1;
 
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0 }}
+      animate={{ 
+        opacity: [0, 1, 0],
+        scale: [0, randomScale, 0],
+      }}
+      transition={{
+        duration: randomDuration,
+        repeat: Infinity,
+        repeatDelay: Math.random() * 2
+      }}
+      className="absolute w-1 h-1 bg-white rounded-full"
+      style={{
+        left: `${randomX}%`,
+        top: `${randomY}%`,
+      }}
+    />
+  );
+};
+
+const SparklesEffect = () => {
+  return (
+    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      {[...Array(6)].map((_, i) => (
+        <Sparkle key={i} />
+      ))}
+    </div>
+  );
+};
   // Add these helper functions inside your App component
 const startBounty = () => {
   if (!bounties.length) {
@@ -801,11 +838,16 @@ useEffect(() => {
     Top Chases
   </button>
 
-  <img 
-    src="/9.gif"
-    alt="Blastoise"
-    className="w-20 h-20 object-contain"
-  />
+ <motion.img 
+  src="/9.gif"
+  alt="Blastoise"
+  className={`w-20 h-20 object-contain cursor-pointer ${
+    shimmerActive ? 'ring-4 ring-blue-500/50 ring-opacity-50 rounded-full' : ''
+  }`}
+  onClick={() => setShimmerActive(!shimmerActive)}
+  whileHover={{ scale: 1.1 }}
+  whileTap={{ scale: 0.9 }}
+/>
 
   <div className="relative cursor-pointer" onClick={() => setIsEditMode(!isEditMode)}>
     <img 
@@ -931,36 +973,37 @@ useEffect(() => {
             </AnimatePresence>
             
             <div className={`grid ${gridCols} gap-2 mx-4 flex-1 h-[calc(100vh-280px)]`}>
-              {numbers.map((number) => (
-                <motion.div
-                  key={number}
-                  onClick={() => toggleNumber(number)}
-                  className={`
-                    relative flex items-center justify-center 
-                    rounded-xl cursor-pointer text-xl font-bold shadow-lg
-                    ${
-                      chaseNumbers.has(number)
-                        ? 'bg-gradient-to-r from-amber-400 via-yellow-500 to-amber-600 text-white'
-                        : selectedNumbers.has(number)
-                        ? 'bg-gradient-to-r from-purple-600 to-purple-800 text-white'
-                        : 'bg-gradient-to-r from-blue-700 to-blue-900 text-white hover:from-blue-600 hover:to-blue-800'
-                    }
-                  `}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  {number}
-                  {(selectedNumbers.has(number)) && (
-                    <motion.div
-                      className="absolute inset-0 flex items-center justify-center overflow-hidden"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                    >
-                      <div className="w-full h-0.5 bg-white transform rotate-45" />
-                    </motion.div>
-                  )}
-                </motion.div>
-              ))}
+             {numbers.map((number) => (
+  <motion.div
+    key={number}
+    onClick={() => toggleNumber(number)}
+    className={`
+      relative flex items-center justify-center 
+      rounded-xl cursor-pointer text-xl font-bold shadow-lg
+      ${
+        chaseNumbers.has(number)
+          ? 'bg-gradient-to-r from-amber-400 via-yellow-500 to-amber-600 text-white'
+          : selectedNumbers.has(number)
+          ? 'bg-gradient-to-r from-purple-600 to-purple-800 text-white'
+          : 'bg-gradient-to-r from-blue-700 to-blue-900 text-white hover:from-blue-600 hover:to-blue-800'
+      }
+    `}
+    whileHover={{ scale: 1.05 }}
+    whileTap={{ scale: 0.95 }}
+  >
+    {number}
+    {(selectedNumbers.has(number)) && (
+      <motion.div
+        className="absolute inset-0 flex items-center justify-center overflow-hidden"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+      >
+        <div className="w-full h-0.5 bg-white transform rotate-45" />
+      </motion.div>
+    )}
+    {!selectedNumbers.has(number) && shimmerActive && <SparklesEffect />}
+  </motion.div>
+))}
             </div>
 
             <div className="flex flex-wrap justify-center items-center gap-4 mx-4 mt-2 text-lg font-bold">

@@ -8,6 +8,7 @@ export default {
     extend: {
       animation: {
         'gradient-x': 'gradient-x 3s linear infinite',
+        'shimmer': 'shimmer 2s linear infinite',
       },
       keyframes: {
         'gradient-x': {
@@ -19,8 +20,19 @@ export default {
             'background-size': '200% 200%',
             'background-position': 'right center'
           }
+        },
+        'shimmer': {
+          '0%': {
+            'background-position': '-200% 0'
+          },
+          '100%': {
+            'background-position': '200% 0'
+          }
         }
-      }
+      },
+      backgroundImage: {
+        'shimmer': 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.2) 50%, transparent 100%)',
+      },
     },
   },
   plugins: [],
