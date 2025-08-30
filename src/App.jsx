@@ -558,16 +558,20 @@ const Sparkle = ({ speed = 1 }) => {
   const randomX = Math.random() * 100;
   const randomY = Math.random() * 100;
   
-  // For level 1, use the original settings
-  const baseSize = speed === 1 ? 1 : speed === 2 ? 2 : 3;
-  const randomScale = speed === 1 
-    ? (0.5 + Math.random() * 0.5) // Original scale for level 1
-    : (0.5 + Math.random() * 0.5) * baseSize; // Larger scale for levels 2 and 3
+  // Adjusted base sizes:
+  // Level 1 (previously level 2): 2px
+  // Level 2 (new middle ground): 2.5px
+  // Level 3: 3px
+  const baseSize = speed === 1 ? 2 : speed === 2 ? 2.5 : 3;
   
-  // Use original timing for level 1
-  const randomDuration = speed === 1
-    ? (1 + Math.random()) // Original duration for level 1
-    : (1 + Math.random()) / (speed * 1.2); // Faster for levels 2 and 3
+  // Adjusted scales for each level
+  const randomScale = (0.5 + Math.random() * 0.5) * baseSize;
+  
+  // Adjusted animation speeds:
+  // Level 1: Moderate (previously level 2)
+  // Level 2: Faster
+  // Level 3: Fastest
+  const randomDuration = (1 + Math.random()) / (speed === 1 ? 1.2 : speed === 2 ? 1.5 : 2);
 
   return (
     <motion.div
@@ -579,7 +583,8 @@ const Sparkle = ({ speed = 1 }) => {
       transition={{
         duration: randomDuration,
         repeat: Infinity,
-        repeatDelay: speed === 1 
+        // Adjusted delays for each level
+        repeatDelay: Math.random() * (speed === 1 ? 0.5 : speed === 2 ? 0.3 : 0.2)
           ? Math.random() * 2 // Original delay for level 1
           : Math.random() * (0.5 / speed) // Shorter delay for higher levels
       }}
