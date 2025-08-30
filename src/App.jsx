@@ -1037,6 +1037,7 @@ if (savedState) {
   setMarkSize(parsedState.markSize || 4)
   setUseStoneStyle(parsedState.useStoneStyle || false)
   setShimmerLevel(parsedState.shimmerLevel !== undefined ? parsedState.shimmerLevel : 1)
+  setCurrentTargetIndex(parsedState.currentTargetIndex || 0)
 } else {
   setBagCount(50)
   setChaseCount(8)
@@ -1087,14 +1088,17 @@ useEffect(() => {
       marks,
       markSize,
       useStoneStyle,
-      shimmerLevel // Updated from shimmerActive
+      shimmerLevel,
+      currentTargetIndex // Add this
     }
     localStorage.setItem('gachaBagState', JSON.stringify(stateToSave))
   } catch (error) {
     console.error('Error saving state:', error)
   }
-}, [bagCount, chaseCount, selectedNumbers, chaseNumbers, remainingChases, marks, markSize, isLoading, useStoneStyle, shimmerLevel])
-  useEffect(() => {
+}, [bagCount, chaseCount, selectedNumbers, chaseNumbers, remainingChases, marks, markSize, isLoading, useStoneStyle, shimmerLevel, currentTargetIndex])
+  
+
+useEffect(() => {
     setIsCooked(remainingChases === 0 && selectedNumbers.size < bagCount)
   }, [remainingChases, selectedNumbers.size, bagCount])
 
