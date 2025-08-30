@@ -17,10 +17,12 @@ const BountyModal = ({
     text: bounties[currentBountyIndex]?.text || '',
     duration: bounties[currentBountyIndex]?.duration || 5,
     interval: bounties[currentBountyIndex]?.interval || 10
-  })
+  });
 
-  const [selectedBountyIndex, setSelectedBountyIndex] = useState(currentBountyIndex)
-  const [isNewBounty, setIsNewBounty] = useState(false)
+  const [selectedBountyIndex, setSelectedBountyIndex] = useState(currentBountyIndex);
+  const [isNewBounty, setIsNewBounty] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -29,58 +31,140 @@ const BountyModal = ({
         text: bounties[selectedBountyIndex]?.text || '',
         duration: bounties[selectedBountyIndex]?.duration || 5,
         interval: bounties[selectedBountyIndex]?.interval || 10
-      })
+      });
+      setError(null);
     }
-  }, [isOpen, selectedBountyIndex, bounties])
+  }, [isOpen, selectedBountyIndex, bounties]);
 
   const handleImageUpload = useCallback((e) => {
-    const file = e.target.files[0]
-    if (file) {
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        setLocalState(prev => ({
-          ...prev,
-          image: e.target.result
-        }))
-      }
-      reader.readAsDataURL(file)
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setIsProcessing(true);
+    setError(null);
+
+    // Check file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setError('Image size must be less than 5MB');
+      setIsProcessing(false);
+      return;
     }
-  }, [])
+
+    const reader = new FileReader();
+    
+    reader.onload = (e) => {
+      // Create an image element to check dimensions
+      const img = new Image();
+      img.onload = () => {
+        // Resize if necessary (max dimension 2000px)
+        let width = img.width;
+        let height = img.height;
+        const maxDimension = 2000;
+
+        if (width > maxDimension || height > maxDimension) {
+          if (width > height) {
+            height = Math.round((height * maxDimension) / width);
+            width = maxDimension;
+          } else {
+            width = Math.round((width * maxDimension) / height);
+            height = maxDimension;
+          }
+
+          // Create canvas for resizing
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          
+          // Enable image smoothing
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = 'high';
+          
+          // Draw and resize image
+          ctx.drawImage(img, 0, 0, width, height);
+          
+          // Convert to base64 with reduced quality
+          const resizedImage = canvas.toDataURL('image/jpeg', 0.8);
+          
+          setLocalState(prev => ({
+            ...prev,
+            image: resizedImage
+          }));
+        } else {
+          // Use original image if no resize needed
+          setLocalState(prev => ({
+            ...prev,
+            image: e.target.result
+          }));
+        }
+        setIsProcessing(false);
+      };
+
+      img.onerror = () => {
+        setError('Failed to process image');
+        setIsProcessing(false);
+      };
+
+      img.src = e.target.result;
+    };
+
+    reader.onerror = () => {
+      setError('Failed to read image file');
+      setIsProcessing(false);
+    };
+
+    try {
+      reader.readAsDataURL(file);
+    } catch (err) {
+      setError('Failed to process image');
+      setIsProcessing(false);
+    }
+  }, []);
 
   const handleAddNew = () => {
-    setIsNewBounty(true)
-    const newIndex = bounties.length
-    setSelectedBountyIndex(newIndex)
+    setIsNewBounty(true);
+    const newIndex = bounties.length;
+    setSelectedBountyIndex(newIndex);
     setLocalState({
       image: null,
       text: '',
       duration: 5,
       interval: 10
-    })
-  }
+    });
+    setError(null);
+  };
 
   const handleSaveNew = () => {
     if (localState.image || localState.text.trim()) {
-      onSave(bounties.length, localState)
-      setIsNewBounty(false)
-      // Create another empty state for the next new bounty
-      setLocalState({
-        image: null,
-        text: '',
-        duration: 5,
-        interval: 10
-      })
+      try {
+        onSave(bounties.length, localState);
+        setIsNewBounty(false);
+        setLocalState({
+          image: null,
+          text: '',
+          duration: 5,
+          interval: 10
+        });
+        setError(null);
+      } catch (err) {
+        setError('Failed to save bounty');
+      }
     }
-  }
+  };
 
-const handleSelect = () => {
-  if (localState.image || localState.text.trim()) {
-    onSave(selectedBountyIndex, localState);
-    setCurrentBountyIndex(selectedBountyIndex);
-  }
-};
+  const handleSelect = () => {
+    if (localState.image || localState.text.trim()) {
+      try {
+        onSave(selectedBountyIndex, localState);
+        setCurrentBountyIndex(selectedBountyIndex);
+        setError(null);
+      } catch (err) {
+        setError('Failed to select bounty');
+      }
+    }
+  };
 
-  if (!isOpen) return null
+  if (!isOpen) return null;
 
   return (
     <motion.div
@@ -94,10 +178,24 @@ const handleSelect = () => {
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.9, opacity: 0 }}
-        className="w-1/4 min-w-[300px] bg-gradient-to-br from-purple-900/90 to-purple-700/90 rounded-xl p-6 shadow-xl border border-purple-500/30"
+        className="w-11/12 md:w-1/4 min-w-[300px] max-h-[90vh] overflow-y-auto bg-gradient-to-br from-purple-900/90 to-purple-700/90 rounded-xl p-6 shadow-xl border border-purple-500/30"
         onClick={e => e.stopPropagation()}
       >
         <h2 className="text-2xl font-bold text-white mb-4">Bounty Settings</h2>
+        
+        {/* Error Message */}
+        {error && (
+          <div className="mb-4 p-3 bg-red-500/50 text-white rounded-lg">
+            {error}
+          </div>
+        )}
+
+        {/* Loading Indicator */}
+        {isProcessing && (
+          <div className="mb-4 p-3 bg-blue-500/50 text-white rounded-lg">
+            Processing image...
+          </div>
+        )}
         
         {/* Bounty Navigation */}
         <div className="mb-4 flex gap-2 flex-wrap">
@@ -105,8 +203,8 @@ const handleSelect = () => {
             <button
               key={index}
               onClick={() => {
-                setSelectedBountyIndex(index)
-                setIsNewBounty(false)
+                setSelectedBountyIndex(index);
+                setIsNewBounty(false);
               }}
               className={`px-3 py-1 rounded ${
                 selectedBountyIndex === index && !isNewBounty
@@ -148,6 +246,7 @@ const handleSelect = () => {
                       accept="image/*"
                       onChange={handleImageUpload}
                       className="hidden"
+                      disabled={isProcessing}
                     />
                   </label>
                 </div>
@@ -160,6 +259,7 @@ const handleSelect = () => {
                   accept="image/*"
                   onChange={handleImageUpload}
                   className="hidden"
+                  disabled={isProcessing}
                 />
               </label>
             )}
@@ -250,10 +350,11 @@ const handleSelect = () => {
             )}
           </div>
         </div>
+
       </motion.div>
     </motion.div>
-  )
-}
+  );
+};
 
 
 function App() {
