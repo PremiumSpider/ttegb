@@ -36,90 +36,73 @@ const BountyModal = ({
     }
   }, [isOpen, selectedBountyIndex, bounties]);
 
-  const handleImageUpload = useCallback((e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+const handleImageUpload = useCallback((e) => {
+  const file = e.target.files[0];
+  if (!file) return;
 
-    setIsProcessing(true);
-    setError(null);
+  setIsProcessing(true);
+  setError(null);
 
-    // Check file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      setError('Image size must be less than 5MB');
-      setIsProcessing(false);
-      return;
-    }
+  // Check file size (max 5MB)
+  if (file.size > 5 * 1024 * 1024) {
+    setError('Image size must be less than 5MB');
+    setIsProcessing(false);
+    return;
+  }
 
-    const reader = new FileReader();
-    
-    reader.onload = (e) => {
-      // Create an image element to check dimensions
-      const img = new Image();
-      img.onload = () => {
-        // Resize if necessary (max dimension 2000px)
-        let width = img.width;
-        let height = img.height;
-        const maxDimension = 2000;
+  const reader = new FileReader();
+  
+  reader.onload = (e) => {
+    // Create an image element to check dimensions
+    const img = new Image();
+    img.onload = () => {
+      // Always reduce the image size by half
+      let width = Math.floor(img.width / 2);
+      let height = Math.floor(img.height / 2);
 
-        if (width > maxDimension || height > maxDimension) {
-          if (width > height) {
-            height = Math.round((height * maxDimension) / width);
-            width = maxDimension;
-          } else {
-            width = Math.round((width * maxDimension) / height);
-            height = maxDimension;
-          }
-
-          // Create canvas for resizing
-          const canvas = document.createElement('canvas');
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext('2d');
-          
-          // Enable image smoothing
-          ctx.imageSmoothingEnabled = true;
-          ctx.imageSmoothingQuality = 'high';
-          
-          // Draw and resize image
-          ctx.drawImage(img, 0, 0, width, height);
-          
-          // Convert to base64 with reduced quality
-          const resizedImage = canvas.toDataURL('image/jpeg', 0.8);
-          
-          setLocalState(prev => ({
-            ...prev,
-            image: resizedImage
-          }));
-        } else {
-          // Use original image if no resize needed
-          setLocalState(prev => ({
-            ...prev,
-            image: e.target.result
-          }));
-        }
-        setIsProcessing(false);
-      };
-
-      img.onerror = () => {
-        setError('Failed to process image');
-        setIsProcessing(false);
-      };
-
-      img.src = e.target.result;
-    };
-
-    reader.onerror = () => {
-      setError('Failed to read image file');
+      // Create canvas for resizing
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      
+      // Enable image smoothing
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      
+      // Draw and resize image
+      ctx.drawImage(img, 0, 0, width, height);
+      
+      // Convert to base64 with reduced quality
+      const resizedImage = canvas.toDataURL('image/jpeg', 0.7); // Reduced quality to 0.7
+      
+      setLocalState(prev => ({
+        ...prev,
+        image: resizedImage
+      }));
       setIsProcessing(false);
     };
 
-    try {
-      reader.readAsDataURL(file);
-    } catch (err) {
+    img.onerror = () => {
       setError('Failed to process image');
       setIsProcessing(false);
-    }
-  }, []);
+    };
+
+    img.src = e.target.result;
+  };
+
+  reader.onerror = () => {
+    setError('Failed to read image file');
+    setIsProcessing(false);
+  };
+
+  try {
+    reader.readAsDataURL(file);
+  } catch (err) {
+    setError('Failed to process image');
+    setIsProcessing(false);
+  }
+}, []);
 
   const handleAddNew = () => {
     setIsNewBounty(true);
