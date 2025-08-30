@@ -389,10 +389,23 @@ const [currentBountyIndex, setCurrentBountyIndex] = useState(0)
   const [showBounty, setShowBounty] = useState(false)
   const [isPlaying, setIsPlaying] = useState(false)
   const animationFrameId = useRef(null)
+    const targetImages = [
+  '/bullseye.png',
+  '/blueseye.png',
+  '/dottedbullseye.png',
+  '/dusk.png',
+  '/fairy.png',
+  '/heal.png',
+  '/master.png',
+  '/poke.png'
+];
+const [currentTargetIndex, setCurrentTargetIndex] = useState(0);
 
   const ProbabilityCalculator = ({ isOpen, onClose, totalBags, totalChases }) => {
   const [bagsDrawn, setBagsDrawn] = useState(3);
   const [chasesHit, setChasesHit] = useState(2);
+
+
 
   // Prevent clicks inside modal from closing it
   const handleModalClick = (e) => {
@@ -510,16 +523,24 @@ const [currentBountyIndex, setCurrentBountyIndex] = useState(0)
   );
 };
 
-  const toggleSprite = () => {
-  setSpriteActive(!spriteActive)
+const toggleSprite = () => {
+  if (spriteActive) {
+    // If turning off, just deactivate
+    setSpriteActive(false);
+  } else {
+    // If turning on, cycle to next image
+    setCurrentTargetIndex((prev) => (prev + 1) % targetImages.length);
+    setSpriteActive(true);
+  }
 }
-  const spriteRef = useRef({
-    x: window.innerWidth / 2,
-    y: window.innerHeight / 2,
-    dx: 5,
-    dy: 5,
-    rotation: 0
-  })
+
+    const spriteRef = useRef({
+      x: window.innerWidth / 2,
+      y: window.innerHeight / 2,
+      dx: 5,
+      dy: 5,
+      rotation: 0
+    })
   
   // Add these refs to your existing refs
 const bountyIntervalRef = useRef(null)
@@ -1576,13 +1597,12 @@ useEffect(() => {
     exit={{ scale: 0 }}
   >
     <img 
-      src="/bullseye.png"
+      src={targetImages[currentTargetIndex]}
       alt="Target"
       className="w-full h-full object-contain opacity-80"
     />
   </motion.div>
 )}
-
 
 
   {/* Chases Count Overlay */}
