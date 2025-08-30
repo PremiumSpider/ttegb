@@ -50,58 +50,63 @@ const handleImageUpload = useCallback((e) => {
     return;
   }
 
-  const reader = new FileReader();
-  
-  reader.onload = (e) => {
-    // Create an image element to check dimensions
-    const img = new Image();
-    img.onload = () => {
-      // Always reduce the image size by half
-      let width = Math.floor(img.width / 2);
-      let height = Math.floor(img.height / 2);
+  // Add a small delay before processing
+  setTimeout(() => {
+    const reader = new FileReader();
+    
+    reader.onload = (e) => {
+      // Add another small delay before image processing
+      setTimeout(() => {
+        const img = new Image();
+        img.onload = () => {
+          // Always reduce the image size by half
+          let width = Math.floor(img.width / 2);
+          let height = Math.floor(img.height / 2);
 
-      // Create canvas for resizing
-      const canvas = document.createElement('canvas');
-      canvas.width = width;
-      canvas.height = height;
-      const ctx = canvas.getContext('2d');
-      
-      // Enable image smoothing
-      ctx.imageSmoothingEnabled = true;
-      ctx.imageSmoothingQuality = 'high';
-      
-      // Draw and resize image
-      ctx.drawImage(img, 0, 0, width, height);
-      
-      // Convert to base64 with reduced quality
-      const resizedImage = canvas.toDataURL('image/jpeg', 0.7); // Reduced quality to 0.7
-      
-      setLocalState(prev => ({
-        ...prev,
-        image: resizedImage
-      }));
+          // Create canvas for resizing
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          
+          // Enable image smoothing
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = 'high';
+          
+          // Draw and resize image
+          ctx.drawImage(img, 0, 0, width, height);
+          
+          // Convert to base64 with reduced quality
+          const resizedImage = canvas.toDataURL('image/jpeg', 0.7);
+          
+          setLocalState(prev => ({
+            ...prev,
+            image: resizedImage
+          }));
+          setIsProcessing(false);
+        };
+
+        img.onerror = () => {
+          setError('Failed to process image');
+          setIsProcessing(false);
+        };
+
+        img.src = e.target.result;
+      }, 100); // Add 100ms delay before image processing
+    };
+
+    reader.onerror = () => {
+      setError('Failed to read image file');
       setIsProcessing(false);
     };
 
-    img.onerror = () => {
+    try {
+      reader.readAsDataURL(file);
+    } catch (err) {
       setError('Failed to process image');
       setIsProcessing(false);
-    };
-
-    img.src = e.target.result;
-  };
-
-  reader.onerror = () => {
-    setError('Failed to read image file');
-    setIsProcessing(false);
-  };
-
-  try {
-    reader.readAsDataURL(file);
-  } catch (err) {
-    setError('Failed to process image');
-    setIsProcessing(false);
-  }
+    }
+  }, 100); // Add 100ms delay before starting the process
 }, []);
 
   const handleAddNew = () => {
