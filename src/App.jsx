@@ -188,33 +188,34 @@ const handleSaveNew = () => {
           </div>
         )}
         
-        {/* Bounty Navigation */}
-        <div className="mb-4 flex gap-2 flex-wrap">
-          {bounties.map((bounty, index) => (
-            <button
-              key={index}
-              onClick={() => {
-                setSelectedBountyIndex(index);
-                setIsNewBounty(false);
-              }}
-              className={`px-3 py-1 rounded ${
-                selectedBountyIndex === index && !isNewBounty
-                  ? 'bg-purple-500' 
-                  : 'bg-purple-800/50'
-              } text-white hover:bg-purple-700 transition-colors`}
-            >
-              {index + 1}
-            </button>
-          ))}
-          {!isNewBounty && (
-            <button
-              onClick={handleAddNew}
-              className="px-3 py-1 rounded bg-purple-800/50 hover:bg-purple-700/50 text-white"
-            >
-              +
-            </button>
-          )}
-        </div>
+{/* Bounty Navigation */}
+<div className="mb-4 flex gap-2 flex-wrap">
+  {bounties.map((bounty, index) => (
+    <button
+      key={index}
+      onClick={() => {
+        setSelectedBountyIndex(index);
+        setIsNewBounty(false);
+      }}
+      className={`px-3 py-1 rounded ${
+        selectedBountyIndex === index && !isNewBounty
+          ? 'bg-purple-500' 
+          : 'bg-purple-800/50'
+      } text-white hover:bg-purple-700 transition-colors`}
+    >
+      {index + 1}
+    </button>
+  ))}
+  {/* Only show the + button if there's at least one bounty */}
+  {!isNewBounty && bounties.length > 0 && (
+    <button
+      onClick={handleAddNew}
+      className="px-3 py-1 rounded bg-purple-800/50 hover:bg-purple-700/50 text-white"
+    >
+      +
+    </button>
+  )}
+</div>
 
         {/* Image Upload */}
         <div className="mb-4">
