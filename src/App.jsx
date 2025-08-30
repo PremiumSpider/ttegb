@@ -356,8 +356,8 @@ const [currentBountyIndex, setCurrentBountyIndex] = useState(0)
         <div className="space-y-6">
           {/* Current Stats */}
           <div className="bg-black/20 p-4 rounded-lg">
-            <p className="text-white mb-2">Total Bags: {totalBags}</p>
             <p className="text-white">Total Chases: {totalChases}</p>
+            <p className="text-white mb-2">Total Bags: {totalBags}</p>
           </div>
 
           {/* Common Scenarios */}
@@ -934,6 +934,14 @@ useEffect(() => {
   }, [])
 
   useEffect(() => {
+  // Stop bounty if we're not in the chases view
+  if (currentView !== 'chases') {
+    stopBounty();
+    setIsPlaying(false);
+  }
+}, [currentView]); // Only re-run when currentView changes
+
+  useEffect(() => {
     if (isLoading) return;
 
     try {
@@ -1359,13 +1367,13 @@ useEffect(() => {
   )}
 </AnimatePresence>
 
-{/* Add new Bottom Controls Container */}
+{/* Bottom Controls Container */}
 <div className="absolute bottom-4 inset-x-4 z-50 flex justify-between">
-  {/* Left side controls */}
-  <div className="flex gap-4">
+  {/* Left side controls in a single row */}
+  <div className="flex gap-4 items-center">
     <motion.div
       onClick={toggleSprite}
-      className="cursor-pointer bg-black/10 rounded-full p-2"
+      className="cursor-pointer bg-black/10 rounded-full p-2 w-fit"
     >
       <img 
         src="/61.gif"
@@ -1408,8 +1416,21 @@ useEffect(() => {
     )}
   </div>
 
-  {/* Right side controls */}
-  <div className="flex gap-4">
+  {/* Right side controls - Chase count and -1C */}
+  <div className="flex gap-4 items-center">
+    <motion.button
+      whileHover={{ scale: 1.1 }}
+      whileTap={{ scale: 0.9 }}
+      onClick={() => {
+        handleChaseCountChange(1);
+        setShowPlusPopup(true);
+        setTimeout(() => setShowPlusPopup(false), 1000);
+      }}
+      className="w-20 h-20 bg-amber-500/30 hover:bg-amber-500/40 rounded-full flex items-center justify-center text-white text-2xl font-bold shadow-lg border border-amber-400/30"
+    >
+      {chaseCount}C
+    </motion.button>
+
     <motion.button
       whileHover={{ scale: 1.1 }}
       whileTap={{ scale: 0.9 }}
@@ -1421,19 +1442,6 @@ useEffect(() => {
       className="w-20 h-20 bg-black/20 hover:bg-black/30 rounded-full flex items-center justify-center text-white text-xl font-bold shadow-lg transition-colors border border-white/20"
     >
       -1C
-    </motion.button>
-
-    <motion.button
-      whileHover={{ scale: 1.1 }}
-      whileTap={{ scale: 0.9 }}
-      onClick={() => {
-        handleChaseCountChange(1);
-        setShowPlusPopup(true);
-        setTimeout(() => setShowPlusPopup(false), 1000);
-      }}
-      className="w-20 h-20 bg-black/20 hover:bg-black/30 rounded-full flex items-center justify-center text-white text-xl font-bold shadow-lg transition-colors border border-white/20"
-    >
-      +1C
     </motion.button>
   </div>
 </div>
@@ -1587,7 +1595,7 @@ useEffect(() => {
         <img 
           src={bounties[currentBountyIndex].image} 
           alt="Bounty" 
-          className="max-w-md max-h-96 object-contain mb-4"
+          className="max-w-[800px] max-h-[600px] object-contain mb-4" // Changed from max-w-md max-h-96
         />
         <div className="text-3xl font-bold text-white text-center">
           {bounties[currentBountyIndex].text}
