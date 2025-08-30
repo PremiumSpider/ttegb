@@ -377,7 +377,7 @@ function App() {
   const [useStoneStyle, setUseStoneStyle] = useState(false);
   const [spriteActive, setSpriteActive] = useState(false)
   const [showBountyModal, setShowBountyModal] = useState(false)
-  const [shimmerActive, setShimmerActive] = useState(true)
+const [shimmerLevel, setShimmerLevel] = useState(1) // 0 = off, 1-3 = shine levels
   const [showMinusPopup, setShowMinusPopup] = useState(false);
 const [showPlusPopup, setShowPlusPopup] = useState(false);
 const [bounties, setBounties] = useState([])
@@ -533,11 +533,14 @@ const bountyTimeout = useRef(null)
       positionY: 0
     }
   })
-const Sparkle = ({ color = "white" }) => {
+const Sparkle = ({ speed = 1 }) => {
   const randomX = Math.random() * 100;
   const randomY = Math.random() * 100;
-  const randomScale = 0.5 + Math.random() * 0.5;
-  const randomDuration = 1 + Math.random() * 1;
+  // Scale the base size with the speed/level
+  const baseSize = speed === 1 ? 1 : speed === 2 ? 2 : 3;
+  const randomScale = (0.5 + Math.random() * 0.5) * baseSize;
+  // Faster animation for higher levels
+  const randomDuration = (1 + Math.random()) / (speed * 1.2);
 
   return (
     <motion.div
@@ -549,22 +552,30 @@ const Sparkle = ({ color = "white" }) => {
       transition={{
         duration: randomDuration,
         repeat: Infinity,
-        repeatDelay: Math.random() * 2
+        repeatDelay: Math.random() * (0.5 / speed) // Shorter delay for higher levels
       }}
-      className="absolute w-1 h-1 bg-white rounded-full"
+      className={`absolute rounded-full bg-white`}
       style={{
         left: `${randomX}%`,
         top: `${randomY}%`,
+        width: `${baseSize}px`,
+        height: `${baseSize}px`,
       }}
     />
   );
 };
 
-const SparklesEffect = () => {
+const SparklesEffect = ({ level }) => {
+  // Number of sparkles for each level
+  const sparkleCount = level === 1 ? 6 : level === 2 ? 12 : 18;
+  
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none">
-      {[...Array(6)].map((_, i) => (
-        <Sparkle key={i} />
+      {[...Array(sparkleCount)].map((_, i) => (
+        <Sparkle 
+          key={i} 
+          speed={level} // Pass level to control animation speed and size
+        />
       ))}
     </div>
   );
@@ -734,6 +745,7 @@ const handleInsuranceImageClick = (e) => {
     setChaseNumbers(new Set())
     setIsCooked(false)
   }
+  
 
   const toggleNumber = (number) => {
     const newSelected = new Set(selectedNumbers)
@@ -984,24 +996,24 @@ useEffect(() => {
       const savedInsuranceImages = localStorage.getItem('insuranceImages')
       const savedInsuranceMarks = localStorage.getItem('insuranceMarks')
       
-      if (savedState) {
-        const parsedState = JSON.parse(savedState)
-        setBagCount(parsedState.bagCount)
-        setChaseCount(parsedState.chaseCount)
-        setRemainingChases(parsedState.remainingChases)
-        setNumbers(Array.from({ length: parsedState.bagCount }, (_, i) => i + 1))
-        setSelectedNumbers(new Set(parsedState.selectedNumbers))
-        setChaseNumbers(new Set(parsedState.chaseNumbers))
-        setMarks(parsedState.marks || [])
-        setMarkSize(parsedState.markSize || 4)
-        setUseStoneStyle(parsedState.useStoneStyle || false)
-        setShimmerActive(parsedState.shimmerActive !== undefined ? parsedState.shimmerActive : true)
-      } else {
-        setBagCount(50)
-        setChaseCount(8)
-        setRemainingChases(8)
-        setNumbers(Array.from({ length: 50 }, (_, i) => i + 1))
-      }
+if (savedState) {
+  const parsedState = JSON.parse(savedState)
+  setBagCount(parsedState.bagCount)
+  setChaseCount(parsedState.chaseCount)
+  setRemainingChases(parsedState.remainingChases)
+  setNumbers(Array.from({ length: parsedState.bagCount }, (_, i) => i + 1))
+  setSelectedNumbers(new Set(parsedState.selectedNumbers))
+  setChaseNumbers(new Set(parsedState.chaseNumbers))
+  setMarks(parsedState.marks || [])
+  setMarkSize(parsedState.markSize || 4)
+  setUseStoneStyle(parsedState.useStoneStyle || false)
+  setShimmerLevel(parsedState.shimmerLevel !== undefined ? parsedState.shimmerLevel : 1)
+} else {
+  setBagCount(50)
+  setChaseCount(8)
+  setRemainingChases(8)
+  setNumbers(Array.from({ length: 50 }, (_, i) => i + 1))
+}
 
       if (savedImage) {
         setPrizeImage(savedImage)
@@ -1033,27 +1045,26 @@ useEffect(() => {
   }
 }, [currentView]); // Only re-run when currentView changes
 
-  useEffect(() => {
-    if (isLoading) return;
+useEffect(() => {
+  if (isLoading) return;
 
-    try {
-      const stateToSave = {
-        bagCount,
-        chaseCount,
-        selectedNumbers: Array.from(selectedNumbers),
-        chaseNumbers: Array.from(chaseNumbers),
-        remainingChases,
-        marks,
-        markSize,
-        useStoneStyle,
-        shimmerActive
-      }
-      localStorage.setItem('gachaBagState', JSON.stringify(stateToSave))
-    } catch (error) {
-      console.error('Error saving state:', error)
+  try {
+    const stateToSave = {
+      bagCount,
+      chaseCount,
+      selectedNumbers: Array.from(selectedNumbers),
+      chaseNumbers: Array.from(chaseNumbers),
+      remainingChases,
+      marks,
+      markSize,
+      useStoneStyle,
+      shimmerLevel // Updated from shimmerActive
     }
-  }, [bagCount, chaseCount, selectedNumbers, chaseNumbers, remainingChases, marks, markSize, isLoading, useStoneStyle])
-
+    localStorage.setItem('gachaBagState', JSON.stringify(stateToSave))
+  } catch (error) {
+    console.error('Error saving state:', error)
+  }
+}, [bagCount, chaseCount, selectedNumbers, chaseNumbers, remainingChases, marks, markSize, isLoading, useStoneStyle, shimmerLevel])
   useEffect(() => {
     setIsCooked(remainingChases === 0 && selectedNumbers.size < bagCount)
   }, [remainingChases, selectedNumbers.size, bagCount])
@@ -1244,16 +1255,16 @@ useEffect(() => {
         </div>
       </div>
 
-      <button
-        onClick={() => setShimmerActive(!shimmerActive)}
-        className={`px-4 py-2 text-white rounded-lg transition-colors ${
-          shimmerActive 
-            ? 'bg-blue-500/50 hover:bg-blue-600/50 ring-2 ring-blue-400' 
-            : 'bg-blue-500/30 hover:bg-blue-500/40'
-        }`}
-      >
-        Shine
-      </button>
+<button
+  onClick={() => setShimmerLevel((prev) => (prev + 1) % 4)} // Cycle through 0-3
+  className={`px-4 py-2 text-white rounded-lg transition-colors ${
+    shimmerLevel > 0
+      ? `bg-blue-500/${shimmerLevel * 25} hover:bg-blue-600/${shimmerLevel * 25} ring-2 ring-blue-400`
+      : 'bg-blue-500/30 hover:bg-blue-500/40'
+  }`}
+>
+  {shimmerLevel === 0 ? 'Shine Off' : `Shine ${shimmerLevel}`}
+</button>
 
       <button
         onClick={() => setShowResetConfirm(true)}
@@ -1320,7 +1331,9 @@ useEffect(() => {
         <div className={`w-full h-0.5 ${useStoneStyle ? 'bg-gray-400' : 'bg-white'} transform rotate-45`} />
       </motion.div>
     )}
-    {!selectedNumbers.has(number) && shimmerActive && <SparklesEffect />}
+{!selectedNumbers.has(number) && shimmerLevel > 0 && (
+  <SparklesEffect level={shimmerLevel} />
+)}
   </motion.div>
 ))}
             </div>
