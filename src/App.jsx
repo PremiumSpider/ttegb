@@ -713,26 +713,58 @@ const handleBountyDelete = (index) => {
     setIsInsuranceEditMode(!isInsuranceEditMode);
   }
 
-  const handleInsuranceImageUpload = (index, e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const imageData = e.target.result;
-        const newImages = [...insuranceImages];
-        newImages[index] = imageData;
-        setInsuranceImages(newImages);
+const handleInsuranceImageUpload = (index, e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    // Create an image element
+    const img = new Image();
+    img.onload = () => {
+      // Always reduce the image size by half
+      let width = Math.floor(img.width / 2);
+      let height = Math.floor(img.height / 2);
+
+      // Create canvas for resizing
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      
+      // Enable image smoothing
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      
+      // Draw and resize image
+      ctx.drawImage(img, 0, 0, width, height);
+      
+      // Convert to base64 with reduced quality
+      const resizedImage = canvas.toDataURL('image/jpeg', 0.7);
+      
+      // Update state and localStorage
+      const newImages = [...insuranceImages];
+      newImages[index] = resizedImage;
+      setInsuranceImages(newImages);
+      
+      try {
         localStorage.setItem('insuranceImages', JSON.stringify(newImages));
-        
-        // Find first non-null image index and set it as current
-        const firstValidIndex = newImages.findIndex(img => img !== null);
-        if (firstValidIndex !== -1) {
-          setCurrentInsuranceIndex(firstValidIndex);
-        }
-      };
-      reader.readAsDataURL(file);
-    }
-  }
+      } catch (error) {
+        console.error('Error saving insurance images:', error);
+        // Handle the error appropriately
+      }
+      
+      // Find first non-null image index and set it as current
+      const firstValidIndex = newImages.findIndex(img => img !== null);
+      if (firstValidIndex !== -1) {
+        setCurrentInsuranceIndex(firstValidIndex);
+      }
+    };
+
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+};
 
 const handleInsuranceImageClick = (e) => {
   if (!imageContainerRef.current) return;
