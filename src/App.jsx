@@ -1536,12 +1536,17 @@ useEffect(() => {
               <motion.div
                 key={index}
                 className="absolute text-blue-400 font-bold pointer-events-none"
-                style={{ 
-                  left: `${mark.x}%`,
-                  top: `${mark.y}%`,
-                  fontSize: `${mark.size || markSize}rem`,
-                  filter: 'drop-shadow(0 0 4px rgba(255, 255, 255, 0.5))'
-                }}
+style={{ 
+  left: `${mark.x}%`,
+  top: `${mark.y}%`,
+  fontSize: `${mark.size || markSize}rem`,
+  textShadow: `
+  -3px -3px 0 #000,
+  3px -3px 0 #000,
+  -3px 3px 0 #000,
+  3px 3px 0 #000
+`
+}}
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
               >
@@ -1784,12 +1789,16 @@ useEffect(() => {
                       key={index}
                       className="absolute text-blue-400 font-bold pointer-events-none"
                       style={{ 
-                        left: `${mark.x}%`,
-                        top: `${mark.y}%`,
-                        fontSize: `${mark.size || markSize}rem`,
-                        filter: 'drop-shadow(0 0 4px rgba(255, 255, 255, 0.5))',
-                        transform: 'translate(-150%, -150%)'
-                      }}
+  left: `${mark.x}%`,
+  top: `${mark.y}%`,
+  fontSize: `${mark.size || markSize}rem`,
+  textShadow: `
+  -3px -3px 0 #000,
+  3px -3px 0 #000,
+  -3px 3px 0 #000,
+  3px 3px 0 #000
+`
+}}
                       initial={{ scale: 0 }}
                       animate={{ scale: 1 }}
                     >
