@@ -536,11 +536,17 @@ const bountyTimeout = useRef(null)
 const Sparkle = ({ speed = 1 }) => {
   const randomX = Math.random() * 100;
   const randomY = Math.random() * 100;
-  // Scale the base size with the speed/level
+  
+  // For level 1, use the original settings
   const baseSize = speed === 1 ? 1 : speed === 2 ? 2 : 3;
-  const randomScale = (0.5 + Math.random() * 0.5) * baseSize;
-  // Faster animation for higher levels
-  const randomDuration = (1 + Math.random()) / (speed * 1.2);
+  const randomScale = speed === 1 
+    ? (0.5 + Math.random() * 0.5) // Original scale for level 1
+    : (0.5 + Math.random() * 0.5) * baseSize; // Larger scale for levels 2 and 3
+  
+  // Use original timing for level 1
+  const randomDuration = speed === 1
+    ? (1 + Math.random()) // Original duration for level 1
+    : (1 + Math.random()) / (speed * 1.2); // Faster for levels 2 and 3
 
   return (
     <motion.div
@@ -552,7 +558,9 @@ const Sparkle = ({ speed = 1 }) => {
       transition={{
         duration: randomDuration,
         repeat: Infinity,
-        repeatDelay: Math.random() * (0.5 / speed) // Shorter delay for higher levels
+        repeatDelay: speed === 1 
+          ? Math.random() * 2 // Original delay for level 1
+          : Math.random() * (0.5 / speed) // Shorter delay for higher levels
       }}
       className={`absolute rounded-full bg-white`}
       style={{
@@ -566,7 +574,7 @@ const Sparkle = ({ speed = 1 }) => {
 };
 
 const SparklesEffect = ({ level }) => {
-  // Number of sparkles for each level
+  // Keep original count for level 1
   const sparkleCount = level === 1 ? 6 : level === 2 ? 12 : 18;
   
   return (
@@ -574,7 +582,7 @@ const SparklesEffect = ({ level }) => {
       {[...Array(sparkleCount)].map((_, i) => (
         <Sparkle 
           key={i} 
-          speed={level} // Pass level to control animation speed and size
+          speed={level}
         />
       ))}
     </div>
