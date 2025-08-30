@@ -50,60 +50,103 @@ const handleImageUpload = useCallback((e) => {
     return;
   }
 
-  const reader = new FileReader();
-  
-  reader.onload = (e) => {
-    // Create an image element to check dimensions
-    const img = new Image();
-    img.onload = () => {
-      // Always reduce the image size by half
-      let width = Math.floor(img.width / 2);
-      let height = Math.floor(img.height / 2);
+  // Function to handle the image processing
+  const processImage = (dataUrl) => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      
+      img.onload = () => {
+        try {
+          // Always reduce the image size by half
+          let width = Math.floor(img.width / 2);
+          let height = Math.floor(img.height / 2);
 
-      // Create canvas for resizing
-      const canvas = document.createElement('canvas');
-      canvas.width = width;
-      canvas.height = height;
-      const ctx = canvas.getContext('2d');
-      
-      // Enable image smoothing
-      ctx.imageSmoothingEnabled = true;
-      ctx.imageSmoothingQuality = 'high';
-      
-      // Draw and resize image
-      ctx.drawImage(img, 0, 0, width, height);
-      
-      // Convert to base64 with reduced quality
-      const resizedImage = canvas.toDataURL('image/jpeg', 0.7); // Reduced quality to 0.7
-      
-      setLocalState(prev => ({
-        ...prev,
-        image: resizedImage
-      }));
-      setIsProcessing(false);
-    };
+          // Create canvas for resizing
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          
+          // Enable image smoothing
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = 'high';
+          
+          // Draw and resize image
+          ctx.drawImage(img, 0, 0, width, height);
+          
+          // Convert to base64 with reduced quality
+          const resizedImage = canvas.toDataURL('image/jpeg', 0.7);
+          
+          // Clean up
+          canvas.width = 0;
+          canvas.height = 0;
+          
+          resolve(resizedImage);
+        } catch (err) {
+          reject(err);
+        }
+      };
 
-    img.onerror = () => {
-      setError('Failed to process image');
-      setIsProcessing(false);
-    };
+      img.onerror = () => reject(new Error('Failed to load image'));
 
-    img.src = e.target.result;
+      img.src = dataUrl;
+    });
   };
 
-  reader.onerror = () => {
-    setError('Failed to read image file');
-    setIsProcessing(false);
+  // Function to attempt file reading with retries
+  const attemptFileRead = (retries = 3) => {
+    const reader = new FileReader();
+
+    reader.onload = async (e) => {
+      try {
+        const resizedImage = await processImage(e.target.result);
+        setLocalState(prev => ({
+          ...prev,
+          image: resizedImage
+        }));
+        setIsProcessing(false);
+      } catch (err) {
+        console.error('Error processing image:', err);
+        if (retries > 0) {
+          console.log(`Retrying... ${retries} attempts left`);
+          setTimeout(() => attemptFileRead(retries - 1), 1000);
+        } else {
+          setError('Failed to process image. Please try again.');
+          setIsProcessing(false);
+        }
+      }
+    };
+
+    reader.onerror = () => {
+      if (retries > 0) {
+        console.log(`Retrying... ${retries} attempts left`);
+        setTimeout(() => attemptFileRead(retries - 1), 1000);
+      } else {
+        setError('Failed to read image file. Please try again.');
+        setIsProcessing(false);
+      }
+    };
+
+    try {
+      // Clear any previous data
+      reader.abort();
+      // Start new read
+      reader.readAsDataURL(file);
+    } catch (err) {
+      if (retries > 0) {
+        console.log(`Retrying... ${retries} attempts left`);
+        setTimeout(() => attemptFileRead(retries - 1), 1000);
+      } else {
+        setError('Failed to read image file. Please try again.');
+        setIsProcessing(false);
+      }
+    }
   };
 
-  try {
-    reader.readAsDataURL(file);
-  } catch (err) {
-    setError('Failed to process image');
-    setIsProcessing(false);
-  }
+  // Start the process
+  attemptFileRead();
+
 }, []);
-
   const handleAddNew = () => {
     setIsNewBounty(true);
     const newIndex = bounties.length;
@@ -837,6 +880,13 @@ const handleReset = () => {
 }
 
   // Effects
+  useEffect(() => {
+  return () => {
+    // Cleanup function
+    setIsProcessing(false);
+    setError(null);
+  };
+}, []);
  // Add this to your App component
 useEffect(() => {
   try {
