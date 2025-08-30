@@ -401,11 +401,12 @@ const [currentBountyIndex, setCurrentBountyIndex] = useState(0)
 ];
 const [currentTargetIndex, setCurrentTargetIndex] = useState(0);
 
-  const ProbabilityCalculator = ({ isOpen, onClose, totalBags, totalChases }) => {
+const ProbabilityCalculator = ({ isOpen, onClose, totalBags, totalChases }) => {
   const [bagsDrawn, setBagsDrawn] = useState(3);
   const [chasesHit, setChasesHit] = useState(2);
 
-
+  // Get the actual remaining bags from the parent component
+  const remainingBags = totalBags;
 
   // Prevent clicks inside modal from closing it
   const handleModalClick = (e) => {
@@ -414,8 +415,11 @@ const [currentTargetIndex, setCurrentTargetIndex] = useState(0);
 
   const calculateProbability = (n, k) => {
     // n = bags drawn, k = chases wanted
-    const N = totalBags; // total bags
+    const N = remainingBags; // remaining bags instead of total bags
     const K = totalChases; // total chases
+    
+    // If trying to draw more bags than available or more chases than exist
+    if (n > N || k > K || n < k) return '0.00';
     
     // Calculate combinations
     const numerator = combination(K, k) * combination(N - K, n - k);
@@ -462,7 +466,7 @@ const [currentTargetIndex, setCurrentTargetIndex] = useState(0);
           {/* Current Stats */}
           <div className="bg-black/20 p-4 rounded-lg">
             <p className="text-white">Total Chases: {totalChases}</p>
-            <p className="text-white mb-2">Total Bags: {totalBags}</p>
+            <p className="text-white mb-2">Bags Left: {remainingBags}</p>
           </div>
 
           {/* Common Scenarios */}
@@ -475,41 +479,41 @@ const [currentTargetIndex, setCurrentTargetIndex] = useState(0);
             <p className="text-white">3/3: {calculateProbability(3, 3)}%</p>
           </div>
 
-         {/* Custom Calculator */}
-<div className="bg-black/20 p-4 rounded-lg space-y-4">
-  <h3 className="text-white font-bold">Custom Calculator:</h3>
-  <div className="flex gap-4">
-    <div className="flex-1">
-      <label className="text-white text-sm">Chases Hit</label>
-      <input
-        type="number"
-        value={chasesHit}
-        onChange={(e) => {
-          const value = e.target.value === '' ? '' : parseInt(e.target.value);
-          setChasesHit(value === '' ? 0 : Math.min(totalChases, Math.max(0, value)));
-        }}
-        className="w-full px-3 py-2 bg-blue-800/50 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-      />
-    </div>
-    <div className="flex-1">
-      <label className="text-white text-sm">Bags Bought</label>
-      <input
-        type="number"
-        value={bagsDrawn}
-        onChange={(e) => {
-          const value = e.target.value === '' ? '' : parseInt(e.target.value);
-          setBagsDrawn(value === '' ? 0 : Math.min(totalBags, Math.max(0, value)));
-        }}
-        className="w-full px-3 py-2 bg-blue-800/50 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-      />
-    </div>
-  </div>
-  <div className="bg-black/30 p-3 rounded-lg">
-    <p className="text-white text-center">
-      Probability: {calculateProbability(bagsDrawn, chasesHit)}%
-    </p>
-  </div>
-</div>
+          {/* Custom Calculator */}
+          <div className="bg-black/20 p-4 rounded-lg space-y-4">
+            <h3 className="text-white font-bold">Custom Calculator:</h3>
+            <div className="flex gap-4">
+              <div className="flex-1">
+                <label className="text-white text-sm">Chases Hit</label>
+                <input
+                  type="number"
+                  value={chasesHit}
+                  onChange={(e) => {
+                    const value = e.target.value === '' ? '' : parseInt(e.target.value);
+                    setChasesHit(value === '' ? 0 : Math.min(totalChases, Math.max(0, value)));
+                  }}
+                  className="w-full px-3 py-2 bg-blue-800/50 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div className="flex-1">
+                <label className="text-white text-sm">Bags Bought</label>
+                <input
+                  type="number"
+                  value={bagsDrawn}
+                  onChange={(e) => {
+                    const value = e.target.value === '' ? '' : parseInt(e.target.value);
+                    setBagsDrawn(value === '' ? 0 : Math.min(remainingBags, Math.max(0, value)));
+                  }}
+                  className="w-full px-3 py-2 bg-blue-800/50 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+            <div className="bg-black/30 p-3 rounded-lg">
+              <p className="text-white text-center">
+                Probability: {calculateProbability(bagsDrawn, chasesHit)}%
+              </p>
+            </div>
+          </div>
         </div>
 
         <button
@@ -1234,11 +1238,11 @@ useEffect(() => {
 <AnimatePresence>
   {showProbCalc && (
     <ProbabilityCalculator
-      isOpen={showProbCalc}
-      onClose={() => setShowProbCalc(false)}
-      totalBags={bagCount}
-      totalChases={chaseCount}
-    />
+  isOpen={showProbCalc}
+  onClose={() => setShowProbCalc(false)}
+  totalBags={bagCount - selectedNumbers.size}  // Now using remaining bags
+  totalChases={remainingChases}  // Using remaining chases instead of total chases
+/>
   )}
 </AnimatePresence>
             <AnimatePresence mode="wait">
