@@ -109,36 +109,39 @@ const handleImageUpload = useCallback((e) => {
   }, 100); // Add 100ms delay before starting the process
 }, []);
 
-  const handleAddNew = () => {
-    setIsNewBounty(true);
-    const newIndex = bounties.length;
-    setSelectedBountyIndex(newIndex);
-    setLocalState({
-      image: null,
-      text: '',
-      duration: 5,
-      interval: 10
-    });
-    setError(null);
-  };
+const handleAddNew = () => {
+  setIsNewBounty(true);
+  const newIndex = bounties.length;
+  setSelectedBountyIndex(newIndex);
+  setLocalState(prev => ({
+    ...prev,
+    text: '',
+    duration: 5,
+    interval: 10
+    // Notice we're not resetting the image here
+  }));
+  setError(null);
+};
 
-  const handleSaveNew = () => {
-    if (localState.image || localState.text.trim()) {
-      try {
-        onSave(bounties.length, localState);
-        setIsNewBounty(false);
-        setLocalState({
-          image: null,
-          text: '',
-          duration: 5,
-          interval: 10
-        });
-        setError(null);
-      } catch (err) {
-        setError('Failed to save bounty');
-      }
+const handleSaveNew = () => {
+  if (localState.image || localState.text.trim()) {
+    try {
+      onSave(bounties.length, localState);
+      setIsNewBounty(false);
+      // Keep the current image when resetting state
+      const currentImage = localState.image;
+      setLocalState({
+        image: currentImage, // Keep the current image
+        text: '',
+        duration: 5,
+        interval: 10
+      });
+      setError(null);
+    } catch (err) {
+      setError('Failed to save bounty');
     }
-  };
+  }
+};
 
   const handleSelect = () => {
     if (localState.image || localState.text.trim()) {
