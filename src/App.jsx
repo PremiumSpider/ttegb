@@ -23,6 +23,8 @@ const BountyModal = ({
   const [isNewBounty, setIsNewBounty] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState(null);
+  const [isDirty, setIsDirty] = useState(false);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -33,71 +35,93 @@ const BountyModal = ({
         interval: bounties[selectedBountyIndex]?.interval || 10
       });
       setError(null);
+      setIsDirty(false);
     }
   }, [isOpen, selectedBountyIndex, bounties]);
 
-const handleImageUpload = useCallback((e) => {
-  const file = e.target.files[0];
-  if (!file) return;
+  const handleImageUpload = useCallback((e) => {
+    const file = e.target.files[0];
+    if (!file) return;
 
-  setIsProcessing(true);
-  setError(null);
+    setIsProcessing(true);
+    setError(null);
 
-  // Check file size (max 5MB)
-  if (file.size > 5 * 1024 * 1024) {
-    setError('Image size must be less than 5MB');
-    setIsProcessing(false);
-    return;
-  }
+    // Check file size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      setError('Image size must be less than 2MB');
+      setIsProcessing(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''; // Reset file input
+      }
+      return;
+    }
 
-  // Add a small delay before processing
-  setTimeout(() => {
     const reader = new FileReader();
     
     reader.onload = (e) => {
-      // Add another small delay before image processing
-      setTimeout(() => {
-        const img = new Image();
-        img.onload = () => {
-          // Always reduce the image size by half
-          let width = Math.floor(img.width / 2);
-          let height = Math.floor(img.height / 2);
+      const img = new Image();
+      img.onload = () => {
+        // Calculate new dimensions (max 800x600)
+        let width = img.width;
+        let height = img.height;
+        const maxWidth = 800;
+        const maxHeight = 600;
 
-          // Create canvas for resizing
-          const canvas = document.createElement('canvas');
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext('2d');
-          
-          // Enable image smoothing
-          ctx.imageSmoothingEnabled = true;
-          ctx.imageSmoothingQuality = 'high';
-          
-          // Draw and resize image
-          ctx.drawImage(img, 0, 0, width, height);
-          
-          // Convert to base64 with reduced quality
-          const resizedImage = canvas.toDataURL('image/jpeg', 0.7);
-          
-          setLocalState(prev => ({
-            ...prev,
-            image: resizedImage
-          }));
-          setIsProcessing(false);
-        };
+        if (width > maxWidth) {
+          height = (height * maxWidth) / width;
+          width = maxWidth;
+        }
+        if (height > maxHeight) {
+          width = (width * maxHeight) / height;
+          height = maxHeight;
+        }
 
-        img.onerror = () => {
-          setError('Failed to process image');
-          setIsProcessing(false);
-        };
+        // Create canvas for resizing
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        
+        // Enable image smoothing
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        
+        // Draw and resize image
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        // Convert to base64 with reduced quality
+        const resizedImage = canvas.toDataURL('image/jpeg', 0.7);
+        
+        setLocalState(prev => ({
+          ...prev,
+          image: resizedImage
+        }));
+        setIsDirty(true);
+        setIsProcessing(false);
 
-        img.src = e.target.result;
-      }, 100); // Add 100ms delay before image processing
+        // Reset file input
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
+      };
+
+      img.onerror = () => {
+        setError('Failed to process image');
+        setIsProcessing(false);
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
+      };
+
+      img.src = e.target.result;
     };
 
     reader.onerror = () => {
       setError('Failed to read image file');
       setIsProcessing(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     };
 
     try {
@@ -105,54 +129,144 @@ const handleImageUpload = useCallback((e) => {
     } catch (err) {
       setError('Failed to process image');
       setIsProcessing(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
-  }, 100); // Add 100ms delay before starting the process
-}, []);
+  }, []);
 
-const handleAddNew = () => {
-  setIsNewBounty(true);
-  const newIndex = bounties.length;
-  setSelectedBountyIndex(newIndex);
-  setLocalState(prev => ({
-    ...prev,
-    text: '',
-    duration: 5,
-    interval: 10
-    // Notice we're not resetting the image here
-  }));
-  setError(null);
-};
+  const handleDeleteImage = () => {
+    if (confirm('Are you sure you want to delete this image?')) {
+      setLocalState(prev => ({
+        ...prev,
+        image: null
+      }));
+      setIsDirty(true);
+      
+      // If this is an existing bounty, update it in localStorage
+      if (!isNewBounty) {
+        const updatedBounties = [...bounties];
+        updatedBounties[selectedBountyIndex] = {
+          ...updatedBounties[selectedBountyIndex],
+          image: null
+        };
+        localStorage.setItem('bounties', JSON.stringify(updatedBounties));
+      }
+    }
+  };
 
-const handleSaveNew = () => {
-  if (localState.image || localState.text.trim()) {
+  const handleAddNew = () => {
+    if (isDirty) {
+      if (!confirm('You have unsaved changes. Continue anyway?')) {
+        return;
+      }
+    }
+    setIsNewBounty(true);
+    const newIndex = bounties.length;
+    setSelectedBountyIndex(newIndex);
+    setLocalState({
+      image: null,
+      text: '',
+      duration: 5,
+      interval: 10
+    });
+    setIsDirty(false);
+    setError(null);
+  };
+
+  const handleSaveNew = () => {
+    if (!localState.image && !localState.text.trim()) {
+      setError('Please add an image or text before saving');
+      return;
+    }
+
     try {
       onSave(bounties.length, localState);
       setIsNewBounty(false);
-      // Keep the current image when resetting state
-      const currentImage = localState.image;
       setLocalState({
-        image: currentImage, // Keep the current image
+        image: null,
         text: '',
         duration: 5,
         interval: 10
       });
+      setIsDirty(false);
       setError(null);
     } catch (err) {
       setError('Failed to save bounty');
     }
-  }
-};
+  };
 
   const handleSelect = () => {
-    if (localState.image || localState.text.trim()) {
+    if (isDirty) {
+      if (!confirm('You have unsaved changes. Save before selecting?')) {
+        return;
+      }
       try {
         onSave(selectedBountyIndex, localState);
+      } catch (err) {
+        setError('Failed to save changes');
+        return;
+      }
+    }
+
+    if (localState.image || localState.text.trim()) {
+      try {
         setCurrentBountyIndex(selectedBountyIndex);
         setError(null);
+        setIsDirty(false);
       } catch (err) {
         setError('Failed to select bounty');
       }
     }
+  };
+
+  const handleSaveChanges = () => {
+    if (!localState.image && !localState.text.trim()) {
+      setError('Please add an image or text before saving');
+      return;
+    }
+
+    try {
+      onSave(selectedBountyIndex, localState);
+      setIsDirty(false);
+      setError(null);
+    } catch (err) {
+      setError('Failed to save changes');
+    }
+  };
+
+  const handleDeleteBounty = () => {
+    if (confirm('Are you sure you want to delete this bounty?')) {
+      try {
+        onDelete(selectedBountyIndex);
+        setError(null);
+        
+        // Update localStorage after deletion
+        const updatedBounties = bounties.filter((_, i) => i !== selectedBountyIndex);
+        localStorage.setItem('bounties', JSON.stringify(updatedBounties));
+        
+        // Reset state if needed
+        if (updatedBounties.length === 0) {
+          setLocalState({
+            image: null,
+            text: '',
+            duration: 5,
+            interval: 10
+          });
+        }
+      } catch (err) {
+        setError('Failed to delete bounty');
+      }
+    }
+  };
+
+  const handleClose = () => {
+    if (isDirty) {
+      if (!confirm('You have unsaved changes. Discard changes?')) {
+        return;
+      }
+    }
+    onClose();
   };
 
   if (!isOpen) return null;
@@ -163,7 +277,7 @@ const handleSaveNew = () => {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center"
-      onClick={(e) => e.target === e.currentTarget && onClose()}
+      onClick={(e) => e.target === e.currentTarget && handleClose()}
     >
       <motion.div
         initial={{ scale: 0.9, opacity: 0 }}
@@ -172,50 +286,55 @@ const handleSaveNew = () => {
         className="w-11/12 md:w-1/4 min-w-[300px] max-h-[90vh] overflow-y-auto bg-gradient-to-br from-purple-900/90 to-purple-700/90 rounded-xl p-6 shadow-xl border border-purple-500/30"
         onClick={e => e.stopPropagation()}
       >
-        <h2 className="text-2xl font-bold text-white mb-4">Bounty Settings</h2>
+        <h2 className="text-2xl font-bold text-white mb-4">
+          {isNewBounty ? 'New Bounty' : `Bounty ${selectedBountyIndex + 1}`}
+          {isDirty && ' *'}
+        </h2>
         
-        {/* Error Message */}
         {error && (
           <div className="mb-4 p-3 bg-red-500/50 text-white rounded-lg">
             {error}
           </div>
         )}
 
-        {/* Loading Indicator */}
         {isProcessing && (
           <div className="mb-4 p-3 bg-blue-500/50 text-white rounded-lg">
             Processing image...
           </div>
         )}
         
-{/* Bounty Navigation */}
-<div className="mb-4 flex gap-2 flex-wrap">
-  {bounties.map((bounty, index) => (
-    <button
-      key={index}
-      onClick={() => {
-        setSelectedBountyIndex(index);
-        setIsNewBounty(false);
-      }}
-      className={`px-3 py-1 rounded ${
-        selectedBountyIndex === index && !isNewBounty
-          ? 'bg-purple-500' 
-          : 'bg-purple-800/50'
-      } text-white hover:bg-purple-700 transition-colors`}
-    >
-      {index + 1}
-    </button>
-  ))}
-  {/* Only show the + button if there's at least one bounty */}
-  {!isNewBounty && bounties.length > 0 && (
-    <button
-      onClick={handleAddNew}
-      className="px-3 py-1 rounded bg-purple-800/50 hover:bg-purple-700/50 text-white"
-    >
-      +
-    </button>
-  )}
-</div>
+        {/* Bounty Navigation */}
+        <div className="mb-4 flex gap-2 flex-wrap">
+          {bounties.map((bounty, index) => (
+            <button
+              key={index}
+              onClick={() => {
+                if (isDirty) {
+                  if (!confirm('You have unsaved changes. Continue anyway?')) {
+                    return;
+                  }
+                }
+                setSelectedBountyIndex(index);
+                setIsNewBounty(false);
+              }}
+              className={`px-3 py-1 rounded ${
+                selectedBountyIndex === index && !isNewBounty
+                  ? 'bg-purple-500' 
+                  : 'bg-purple-800/50'
+              } text-white hover:bg-purple-700 transition-colors`}
+            >
+              {index + 1}
+            </button>
+          ))}
+          {!isNewBounty && (
+            <button
+              onClick={handleAddNew}
+              className="px-3 py-1 rounded bg-purple-800/50 hover:bg-purple-700/50 text-white"
+            >
+              +
+            </button>
+          )}
+        </div>
 
         {/* Image Upload */}
         <div className="mb-4">
@@ -230,10 +349,11 @@ const handleSaveNew = () => {
                   alt="Bounty Preview" 
                   className="w-full h-full object-contain"
                 />
-                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4">
                   <label className="cursor-pointer text-white hover:text-purple-300 transition-colors">
-                    Change Image
+                    Change
                     <input
+                      ref={fileInputRef}
                       type="file"
                       accept="image/*"
                       onChange={handleImageUpload}
@@ -241,12 +361,19 @@ const handleSaveNew = () => {
                       disabled={isProcessing}
                     />
                   </label>
+                  <button
+                    onClick={handleDeleteImage}
+                    className="text-red-300 hover:text-red-400 transition-colors"
+                  >
+                    Delete
+                  </button>
                 </div>
               </div>
             ) : (
               <label className="w-full h-full flex items-center justify-center cursor-pointer hover:bg-purple-700/50 transition-colors">
-                <span className="text-white">Click to Upload Image {isNewBounty ? 'New' : selectedBountyIndex + 1}</span>
+                <span className="text-white">Click to Upload Image</span>
                 <input
+                  ref={fileInputRef}
                   type="file"
                   accept="image/*"
                   onChange={handleImageUpload}
@@ -260,11 +387,14 @@ const handleSaveNew = () => {
 
         {/* Text Input */}
         <div className="mb-4">
-          <label className="block text-white mb-2">Bounty Text (Tap Select.. to save)</label>
+          <label className="block text-white mb-2">Bounty Text</label>
           <input
             type="text"
             value={localState.text}
-            onChange={(e) => setLocalState(prev => ({ ...prev, text: e.target.value }))}
+            onChange={(e) => {
+              setLocalState(prev => ({ ...prev, text: e.target.value }));
+              setIsDirty(true);
+            }}
             className="w-full px-3 py-2 bg-purple-800/50 rounded-lg text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500"
             placeholder="Enter text (e.g., 0/2)"
           />
@@ -279,7 +409,10 @@ const handleSaveNew = () => {
               min="1"
               max="10"
               value={localState.duration}
-              onChange={(e) => setLocalState(prev => ({ ...prev, duration: Number(e.target.value) }))}
+              onChange={(e) => {
+                setLocalState(prev => ({ ...prev, duration: Number(e.target.value) }));
+                setIsDirty(true);
+              }}
               className="flex-1 h-2 bg-purple-800/50 rounded-lg appearance-none cursor-pointer"
             />
             <span className="text-white w-8 text-center">{localState.duration}s</span>
@@ -295,7 +428,10 @@ const handleSaveNew = () => {
               min="5"
               max="30"
               value={localState.interval}
-              onChange={(e) => setLocalState(prev => ({ ...prev, interval: Number(e.target.value) }))}
+              onChange={(e) => {
+                setLocalState(prev => ({ ...prev, interval: Number(e.target.value) }));
+                setIsDirty(true);
+              }}
               className="flex-1 h-2 bg-purple-800/50 rounded-lg appearance-none cursor-pointer"
             />
             <span className="text-white w-8 text-center">{localState.interval}s</span>
@@ -306,7 +442,7 @@ const handleSaveNew = () => {
         <div className="flex justify-between gap-3">
           {!isNewBounty && bounties[selectedBountyIndex] && (
             <button
-              onClick={() => onDelete(selectedBountyIndex)}
+              onClick={handleDeleteBounty}
               className="px-4 py-2 bg-red-500/50 text-white rounded-lg hover:bg-red-600/50 transition-colors"
             >
               Delete
@@ -314,7 +450,7 @@ const handleSaveNew = () => {
           )}
           <div className="flex gap-3 ml-auto">
             <button
-              onClick={onClose}
+              onClick={handleClose}
               className="px-4 py-2 bg-purple-800/50 text-white rounded-lg hover:bg-purple-700/50 transition-colors"
             >
               Close
@@ -323,26 +459,35 @@ const handleSaveNew = () => {
               <button 
                 onClick={handleSaveNew}
                 className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors"
+                disabled={!isDirty}
               >
-                Save
+                Save New
               </button>
             ) : (
-              <button 
-  onClick={handleSelect}
-  className={`px-4 py-2 text-white rounded-lg transition-colors ${
-    bounties.length === 0
-      ? 'bg-purple-500 hover:bg-purple-600'
-      : selectedBountyIndex === currentBountyIndex
-      ? 'bg-green-500 hover:bg-green-600'
-      : 'bg-purple-500 hover:bg-purple-600'
-  }`}
->
-  {bounties.length === 0 ? 'Save' : selectedBountyIndex === currentBountyIndex ? 'Selected' : 'Select'}
-</button>
+              <>
+                {isDirty && (
+                  <button 
+                    onClick={handleSaveChanges}
+                    className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors"
+                  >
+                    Save Changes
+                  </button>
+                )}
+                <button 
+                  onClick={handleSelect}
+                  className={`px-4 py-2 text-white rounded-lg transition-colors ${
+                    selectedBountyIndex === currentBountyIndex
+                      ? 'bg-blue-500 hover:bg-blue-600'
+                      : 'bg-purple-500 hover:bg-purple-600'
+                  }`}
+                  disabled={isDirty}
+                >
+                  {selectedBountyIndex === currentBountyIndex ? 'Selected' : 'Select'}
+                </button>
+              </>
             )}
           </div>
         </div>
-
       </motion.div>
     </motion.div>
   );
