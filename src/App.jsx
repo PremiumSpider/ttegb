@@ -802,12 +802,22 @@ const handleInsuranceImageClick = (e) => {
   }
 
   // Bags and Chases handlers
-  const handleBagCountChange = (increment) => {
-    const newCount = Math.max(1, Math.min(100, bagCount + increment))
-    setBagCount(newCount)
-    setNumbers(Array.from({ length: newCount }, (_, i) => i + 1))
-    setIsCooked(false)
+const handleBagCountChange = (increment) => {
+  if (increment < 0) {
+    // Check if any numbers above the new count are in use
+    const newCount = vintageBagCount + increment;
+    const numbersInUse = users.some(user => 
+      user.numbers.some(num => num > newCount)
+    );
+    
+    if (numbersInUse) {
+      alert('Cannot reduce bags: Some numbers above ' + newCount + ' are in use');
+      return;
+    }
   }
+  
+  setVintageBagCount(prev => Math.max(1, Math.min(100, prev + increment)));
+};
 
   const handleChaseCountChange = (increment) => {
     const newCount = Math.max(0, Math.min(100, chaseCount + increment))
@@ -871,6 +881,256 @@ const handleInsuranceImageClick = (e) => {
   </motion.div>
 );
 
+const VintageBags = () => {
+  const [users, setUsers] = useState(() => {
+    const saved = localStorage.getItem('vintageBagsUsers');
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [currentUser, setCurrentUser] = useState({ name: '', numbers: new Set() });
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [showList, setShowList] = useState(false);
+  const [editingUser, setEditingUser] = useState(null);
+  const [vintageBagCount, setVintageBagCount] = useState(() => {
+    const saved = localStorage.getItem('vintageBagCount');
+    return saved ? parseInt(saved) : 50;
+  });
+
+  // Save users to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('vintageBagsUsers', JSON.stringify(users));
+  }, [users]);
+
+  // Save vintage bag count whenever it changes
+  useEffect(() => {
+    localStorage.setItem('vintageBagCount', vintageBagCount.toString());
+  }, [vintageBagCount]);
+
+  const handleNumberClick = (number) => {
+    const newNumbers = new Set(currentUser.numbers);
+    if (newNumbers.has(number)) {
+      newNumbers.delete(number);
+    } else {
+      newNumbers.add(number);
+    }
+    setCurrentUser({ ...currentUser, numbers: newNumbers });
+  };
+
+  const handleSave = () => {
+    if (!currentUser.name.trim()) {
+      alert('Please enter a name');
+      return;
+    }
+    
+    // Convert Set to Array before saving
+    const userToSave = {
+      ...currentUser,
+      numbers: Array.from(currentUser.numbers)
+    };
+
+    if (editingUser) {
+      setUsers(users.map(user => 
+        user.name === editingUser.name ? userToSave : user
+      ));
+      setEditingUser(null);
+    } else {
+      setUsers([...users, userToSave]);
+    }
+    setCurrentUser({ name: '', numbers: new Set() });
+  };
+
+  const handleEdit = (user) => {
+    setEditingUser(user);
+    setCurrentUser({ 
+      name: user.name, 
+      numbers: new Set(user.numbers)
+    });
+    setShowList(false);
+  };
+
+  const handleDelete = (userName) => {
+    if (confirm('Are you sure you want to delete this user?')) {
+      setUsers(users.filter(user => user.name !== userName));
+    }
+  };
+
+  const handleBagCountChange = (increment) => {
+    setVintageBagCount(prev => Math.max(1, Math.min(100, prev + increment)));
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-600 via-teal-500 to-green-400 p-4">
+      <div className="h-full bg-white/10 backdrop-blur-md rounded-2xl shadow-xl p-6">
+        <div className="flex justify-between items-center mb-6">
+          <button
+            onClick={() => setCurrentView('bags')}
+            className="px-6 py-3 bg-blue-900/40 hover:bg-blue-800/50 text-white rounded-lg transition-colors"
+          >
+            Return to Bags
+          </button>
+          <div className="flex items-center gap-4">
+  <motion.img 
+    src="/141.gif"
+    alt="Kaubops"
+    className="w-20 h-20 object-contain animate-pulse"
+    style={{ animationDuration: '3s' }}
+  />
+  <h1 className="text-4xl font-black text-transparent bg-clip-text relative">
+    <span className="absolute inset-0 text-4xl font-black text-white blur-sm">
+      VINTAGE BAGS
+    </span>
+    <span className="relative animate-gradient-x bg-gradient-to-r from-amber-400 via-yellow-500 to-amber-600 bg-clip-text text-transparent">
+      VINTAGE BAGS
+    </span>
+  </h1>
+  <motion.img 
+    src="/142.gif"
+    alt="Aerodactyl"
+    className="w-20 h-20 object-contain animate-pulse"
+    style={{ animationDuration: '3s' }}
+  />
+</div>
+          <button
+            onClick={() => setShowList(!showList)}
+            className="px-6 py-3 bg-purple-900/40 hover:bg-purple-800/50 text-white rounded-lg transition-colors"
+          >
+            {showList ? 'Show V. Bags' : 'View List'}
+          </button>
+        </div>
+
+        {/* Edit Mode Controls */}
+        <AnimatePresence mode="wait">
+          {isEditMode && (
+  <motion.div
+    key="controls"
+    initial={{ opacity: 0, y: -20 }}
+    animate={{ opacity: 1, y: 0 }}
+    exit={{ opacity: 0, y: -20 }}
+    className="flex flex-wrap items-center justify-between gap-4 mx-4 mb-4 bg-black/20 backdrop-blur-sm p-4 rounded-xl"
+  >
+    <div className="flex items-center gap-2">
+      <span className="text-base font-medium text-white">Total Bags:</span>
+      <div className="flex items-center gap-2">
+        <button
+          onClick={() => handleBagCountChange(-1)}
+          className="w-10 h-10 flex items-center justify-center bg-black/30 text-white rounded-lg text-xl"
+        >
+          -
+        </button>
+        <span className="text-xl font-bold text-white w-10 text-center">
+          {vintageBagCount}
+        </span>
+        <button
+          onClick={() => handleBagCountChange(1)}
+          className="w-10 h-10 flex items-center justify-center bg-black/30 text-white rounded-lg text-xl"
+        >
+          +
+        </button>
+      </div>
+    </div>
+  </motion.div>
+)}
+        </AnimatePresence>
+
+        {!showList ? (
+          <>
+            <div className="flex justify-between items-center mb-6">
+  <input
+    type="text"
+    value={currentUser.name}
+    onChange={(e) => setCurrentUser({ ...currentUser, name: e.target.value })}
+    placeholder="Enter user name"
+    className="flex-1 px-4 py-2 bg-white/10 rounded-lg text-white placeholder-white/50 mr-4"
+  />
+  {users.length === 0 && (
+    <button
+      onClick={() => setIsEditMode(!isEditMode)}
+      className="px-4 py-2 bg-purple-900/40 hover:bg-purple-800/50 text-white rounded-lg transition-colors"
+    >
+      {isEditMode ? 'Done' : 'Bag Count'}
+    </button>
+  )}
+</div>
+
+            <div className="grid grid-cols-10 gap-1 mb-6">
+              {Array.from({ length: vintageBagCount }, (_, i) => i + 1).map(number => {
+                const isTaken = users.some(user => 
+                  user.name !== currentUser.name && user.numbers.includes(number)
+                );
+                const isSelected = currentUser.numbers.has(number);
+
+                return (
+                  <motion.div
+                    key={number}
+                    onClick={() => !isTaken && handleNumberClick(number)}
+                    className={`
+                      relative flex items-center justify-center p-2
+                      rounded-lg cursor-pointer text-sm font-bold shadow-lg
+                      ${isTaken ? 'bg-red-500/50 cursor-not-allowed' :
+                        isSelected ? 'bg-yellow-500/50' :
+                        'bg-blue-900/50 hover:bg-blue-800/50'}
+                      text-white
+                    `}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    {number}
+                  </motion.div>
+                );
+              })}
+            </div>
+
+            <div className="flex justify-between items-center">
+              <div className="text-white">
+                Selected numbers: {Array.from(currentUser.numbers).sort((a, b) => a - b).join(', ')}
+              </div>
+              <button
+                onClick={handleSave}
+                className="px-6 py-3 bg-green-600/60 text-white rounded-lg transition-colors"
+              >
+                {editingUser ? 'Update' : 'Save'}
+              </button>
+            </div>
+          </>
+        ) : (
+          <div className="bg-white/10 rounded-xl p-4">
+            <table className="w-full">
+              <thead>
+                <tr className="text-white border-b border-white/20">
+                  <th className="py-2 text-left">Name</th>
+                  <th className="py-2 text-left">Numbers</th>
+                  <th className="py-2 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {users.map(user => (
+                  <tr key={user.name} className="text-white border-b border-white/10">
+                    <td className="py-2">{user.name}</td>
+                    <td className="py-2">{user.numbers.sort((a, b) => a - b).join(', ')}</td>
+                    <td className="py-2 text-right">
+                      <button
+                        onClick={() => handleEdit(user)}
+                        className="px-3 py-1 bg-blue-500/50 rounded-lg mr-2"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDelete(user.name)}
+                        className="px-3 py-1 bg-red-500/50 rounded-lg"
+                      >
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 const handleImageClick = (e) => {
   if (!imageContainerRef.current) return;
   
@@ -896,6 +1156,8 @@ const handleImageClick = (e) => {
   const handleUndo = () => {
     setMarks(marks.slice(0, -1))
   }
+
+
 
 const handleReset = () => {
   try {
@@ -1235,13 +1497,20 @@ useEffect(() => {
     Insurance
   </button>
 </div>
-           <div className="flex items-center justify-center gap-4 mb-2">
+<div className="flex items-center justify-center gap-4 mb-2">
+  <motion.div
+  whileHover={{ scale: 1.1 }}
+  whileTap={{ scale: 0.9 }}
+  onClick={() => setCurrentView('vintage')}
+  className="cursor-pointer"
+>
   <img 
     src="/pokegoons-logo.png" 
     alt="PokeGoons Logo" 
     className="w-20 h-20 object-contain animate-pulse"
     style={{ animationDuration: '3s' }}
   />
+</motion.div>
   <h1 className="text-4xl font-black text-transparent bg-clip-text relative">
     <span className="absolute inset-0 text-4xl font-black text-white blur-sm">
       POKEGOONS BAGS
@@ -1789,7 +2058,9 @@ style={{
   )}
 </AnimatePresence>
 </div>
-        ) : (
+        ) : currentView === 'vintage' ? (
+        <VintageBags />
+      ) : (
           <div className="relative h-[100dvh] max-h-[100dvh] w-full overflow-hidden">
   <div className="absolute top-safe-4 left-4 z-[60] flex gap-2">
     <button
