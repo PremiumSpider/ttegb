@@ -39,101 +39,124 @@ const BountyModal = ({
     }
   }, [isOpen, selectedBountyIndex, bounties]);
 
-  const handleImageUpload = useCallback((e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+const handleImageUpload = useCallback((e) => {
+  const file = e.target.files[0];
+  if (!file) return;
 
-    setIsProcessing(true);
-    setError(null);
+  setIsProcessing(true);
+  setError(null);
 
-    // Check file size (max 2MB)
-    if (file.size > 2 * 1024 * 1024) {
-      setError('Image size must be less than 2MB');
-      setIsProcessing(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = ''; // Reset file input
-      }
-      return;
-    }
+  // REMOVED the 2MB check that was here:
+  // if (file.size > 2 * 1024 * 1024) {
+  //   setError('Image size must be less than 2MB');
+  //   setIsProcessing(false);
+  //   return;
+  // }
 
-    const reader = new FileReader();
-    
-    reader.onload = (e) => {
-      const img = new Image();
-      img.onload = () => {
-        // Calculate new dimensions (max 800x600)
-        let width = img.width;
-        let height = img.height;
-        const maxWidth = 800;
-        const maxHeight = 600;
+  const reader = new FileReader();
+  
+  reader.onload = (e) => {
+    const img = new Image();
+    img.onload = async () => {
+      try {
+        // Calculate initial dimensions
+        let { width, height } = calculateAspectRatioFit(
+          img.width,
+          img.height,
+          1200,
+          1200
+        );
 
-        if (width > maxWidth) {
-          height = (height * maxWidth) / width;
-          width = maxWidth;
-        }
-        if (height > maxHeight) {
-          width = (width * maxHeight) / height;
-          height = maxHeight;
-        }
-
-        // Create canvas for resizing
         const canvas = document.createElement('canvas');
         canvas.width = width;
         canvas.height = height;
         const ctx = canvas.getContext('2d');
-        
-        // Enable image smoothing
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = 'high';
-        
-        // Draw and resize image
         ctx.drawImage(img, 0, 0, width, height);
-        
-        // Convert to base64 with reduced quality
-        const resizedImage = canvas.toDataURL('image/jpeg', 0.7);
-        
+
+        // Try different quality levels
+        const qualityLevels = [0.9, 0.7, 0.5, 0.3];
+        let output = null;
+
+        for (let quality of qualityLevels) {
+          try {
+            output = canvas.toDataURL('image/jpeg', quality);
+            
+            // If we got a reasonable size, break the loop
+            if (output.length < 800000) {
+              console.log(`Successfully compressed at quality: ${quality}`);
+              break;
+            }
+          } catch (err) {
+            console.log(`Failed at quality ${quality}, trying lower quality...`);
+            continue;
+          }
+        }
+
+        // If still no success, try more aggressive resizing
+        if (!output || output.length > 800000) {
+          console.log('Trying aggressive resizing...');
+          width *= 0.7;
+          height *= 0.7;
+          canvas.width = width;
+          canvas.height = height;
+          ctx.drawImage(img, 0, 0, width, height);
+          output = canvas.toDataURL('image/jpeg', 0.6);
+        }
+
+        if (!output) {
+          throw new Error('Failed to process image at any quality level');
+        }
+
         setLocalState(prev => ({
           ...prev,
-          image: resizedImage
+          image: output
         }));
         setIsDirty(true);
         setIsProcessing(false);
 
-        // Reset file input
-        if (fileInputRef.current) {
-          fileInputRef.current.value = '';
-        }
-      };
-
-      img.onerror = () => {
-        setError('Failed to process image');
+      } catch (err) {
+        console.error('Image processing error:', err);
+        setError('Failed to process image. Try a smaller image or different format.');
         setIsProcessing(false);
-        if (fileInputRef.current) {
-          fileInputRef.current.value = '';
-        }
-      };
+      }
 
-      img.src = e.target.result;
+      // Clear file input regardless of success/failure
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     };
 
-    reader.onerror = () => {
-      setError('Failed to read image file');
+    img.onerror = () => {
+      setError('Failed to load image');
       setIsProcessing(false);
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
     };
 
-    try {
-      reader.readAsDataURL(file);
-    } catch (err) {
-      setError('Failed to process image');
-      setIsProcessing(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
+    img.src = e.target.result;
+  };
+
+  reader.onerror = () => {
+    setError('Failed to read image file');
+    setIsProcessing(false);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
-  }, []);
+  };
+
+  try {
+    reader.readAsDataURL(file);
+  } catch (err) {
+    setError('Failed to read file');
+    setIsProcessing(false);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  }
+}, []);
 
   const handleDeleteImage = () => {
     if (confirm('Are you sure you want to delete this image?')) {
