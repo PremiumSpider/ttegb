@@ -581,6 +581,14 @@ const [currentBountyIndex, setCurrentBountyIndex] = useState(0)
   const [showBounty, setShowBounty] = useState(false)
   const [isPlaying, setIsPlaying] = useState(false)
   const animationFrameId = useRef(null)
+  const [vintageImages, setVintageImages] = useState(() => {
+  const saved = localStorage.getItem('vintageBagImages');
+  return saved ? JSON.parse(saved) : [null, null, null];
+});
+const [currentImageIndex, setCurrentImageIndex] = useState(0);
+const [isGalleryEditMode, setIsGalleryEditMode] = useState(false);
+const [hasImages, setHasImages] = useState(false);
+
     const targetImages = [
   '/bullseye.png',
   '/blueseye.png',
@@ -1180,6 +1188,7 @@ const calculateAspectRatioFit = (srcWidth, srcHeight, maxWidth, maxHeight) => {
 );
 
 const VintageBags = () => {
+  // Original vintage bags state
   const [users, setUsers] = useState(() => {
     const saved = localStorage.getItem('vintageBagsUsers');
     return saved ? JSON.parse(saved) : [];
@@ -1193,16 +1202,84 @@ const VintageBags = () => {
     return saved ? parseInt(saved) : 50;
   });
 
-  // Save users to localStorage whenever they change
+  // Image gallery state
+  const [vintageImages, setVintageImages] = useState(() => {
+    const saved = localStorage.getItem('vintageBagImages');
+    return saved ? JSON.parse(saved) : [null, null, null];
+  });
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [isGalleryEditMode, setIsGalleryEditMode] = useState(false);
+  const [hasImages, setHasImages] = useState(false);
+
+  // Effects for persistence
+  useEffect(() => {
+    const hasAnyImages = vintageImages.some(img => img !== null);
+    setHasImages(hasAnyImages);
+    if (!hasAnyImages) {
+      setIsGalleryEditMode(true);
+    }
+  }, [vintageImages]);
+
+  useEffect(() => {
+    localStorage.setItem('vintageBagImages', JSON.stringify(vintageImages));
+  }, [vintageImages]);
+
   useEffect(() => {
     localStorage.setItem('vintageBagsUsers', JSON.stringify(users));
   }, [users]);
 
-  // Save vintage bag count whenever it changes
   useEffect(() => {
     localStorage.setItem('vintageBagCount', vintageBagCount.toString());
   }, [vintageBagCount]);
 
+  // Helper function for gallery navigation
+  const getNextValidIndex = (currentIndex, direction) => {
+    let newIndex = currentIndex;
+    let count = 0;
+    do {
+      newIndex = (newIndex + direction + 3) % 3;
+      count++;
+      if (vintageImages[newIndex] !== null) {
+        return newIndex;
+      }
+    } while (count < 3);
+    return currentIndex;
+  };
+
+  // Image upload handler
+  const handleImageUpload = (index, e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        // Create canvas for resizing
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width / 2;
+        canvas.height = img.height / 2;
+        const ctx = canvas.getContext('2d');
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        
+        // Convert to base64 with reduced quality
+        const resizedImage = canvas.toDataURL('image/jpeg', 0.7);
+        
+        const newImages = [...vintageImages];
+        newImages[index] = resizedImage;
+        setVintageImages(newImages);
+        
+        // Set current index to uploaded image
+        setCurrentImageIndex(index);
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Original vintage bags handlers
   const handleNumberClick = (number) => {
     const newNumbers = new Set(currentUser.numbers);
     if (newNumbers.has(number)) {
@@ -1213,39 +1290,37 @@ const VintageBags = () => {
     setCurrentUser({ ...currentUser, numbers: newNumbers });
   };
 
-const handleSave = () => {
-  if (!currentUser.name.trim()) {
-    alert('Please enter a name');
-    return;
-  }
+  const handleSave = () => {
+    if (!currentUser.name.trim()) {
+      alert('Please enter a name');
+      return;
+    }
 
-  // Check for duplicate names
-  const isDuplicateName = users.some(user => 
-    user.name.toLowerCase() === currentUser.name.toLowerCase() && 
-    (!editingUser || editingUser.name.toLowerCase() !== currentUser.name.toLowerCase())
-  );
+    const isDuplicateName = users.some(user => 
+      user.name.toLowerCase() === currentUser.name.toLowerCase() && 
+      (!editingUser || editingUser.name.toLowerCase() !== currentUser.name.toLowerCase())
+    );
 
-  if (isDuplicateName) {
-    alert('A user with this name already exists. Please choose a different name.');
-    return;
-  }
-  
-  // Convert Set to Array before saving
-  const userToSave = {
-    ...currentUser,
-    numbers: Array.from(currentUser.numbers)
+    if (isDuplicateName) {
+      alert('A user with this name already exists. Please choose a different name.');
+      return;
+    }
+
+    const userToSave = {
+      ...currentUser,
+      numbers: Array.from(currentUser.numbers)
+    };
+
+    if (editingUser) {
+      setUsers(users.map(user => 
+        user.name === editingUser.name ? userToSave : user
+      ));
+      setEditingUser(null);
+    } else {
+      setUsers([...users, userToSave]);
+    }
+    setCurrentUser({ name: '', numbers: new Set() });
   };
-
-  if (editingUser) {
-    setUsers(users.map(user => 
-      user.name === editingUser.name ? userToSave : user
-    ));
-    setEditingUser(null);
-  } else {
-    setUsers([...users, userToSave]);
-  }
-  setCurrentUser({ name: '', numbers: new Set() });
-};
 
   const handleEdit = (user) => {
     setEditingUser(user);
@@ -1268,171 +1343,273 @@ const handleSave = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-600 via-teal-500 to-green-400 p-4">
-      <div className="h-full bg-white/10 backdrop-blur-md rounded-2xl shadow-xl p-6">
-        <div className="flex justify-between items-center mb-6">
-          <button
-            onClick={() => setCurrentView('bags')}
-            className="px-6 py-3 bg-blue-900/40 hover:bg-blue-800/50 text-white rounded-lg transition-colors"
-          >
-            Return to Bags
-          </button>
-          <div className="flex items-center gap-4">
-  <motion.img 
-    src="/141.gif"
-    alt="Kaubops"
-    className="w-20 h-20 object-contain animate-pulse"
-    style={{ animationDuration: '3s' }}
-  />
-  <h1 className="text-4xl font-black text-transparent bg-clip-text relative">
-    <span className="absolute inset-0 text-4xl font-black text-white blur-sm">
-      VINTAGE BAGS
-    </span>
-    <span className="relative animate-gradient-x bg-gradient-to-r from-amber-400 via-yellow-500 to-amber-600 bg-clip-text text-transparent">
-      VINTAGE BAGS
-    </span>
-  </h1>
-  <motion.img 
-    src="/142.gif"
-    alt="Aerodactyl"
-    className="w-20 h-20 object-contain animate-pulse"
-    style={{ animationDuration: '3s' }}
-  />
-</div>
-          <button
-            onClick={() => setShowList(!showList)}
-            className="px-6 py-3 bg-purple-900/40 hover:bg-purple-800/50 text-white rounded-lg transition-colors"
-          >
-            {showList ? 'Show V. Bags' : 'View List'}
-          </button>
+      <div className="flex flex-col gap-4 h-full">
+        {/* Top section - Original Vintage Bags UI */}
+        <div className="bg-white/10 backdrop-blur-md rounded-2xl shadow-xl p-6">
+          <div className="flex justify-between items-center mb-6">
+            <button
+              onClick={() => setCurrentView('bags')}
+              className="px-6 py-3 bg-blue-900/40 hover:bg-blue-800/50 text-white rounded-lg transition-colors"
+            >
+              Return to Bags
+            </button>
+            <div className="flex items-center gap-4">
+              <motion.img 
+                src="/141.gif"
+                alt="Kaubops"
+                className="w-20 h-20 object-contain animate-pulse"
+                style={{ animationDuration: '3s' }}
+              />
+              <h1 className="text-4xl font-black text-transparent bg-clip-text relative">
+                <span className="absolute inset-0 text-4xl font-black text-white blur-sm">
+                  VINTAGE BAGS
+                </span>
+                <span className="relative animate-gradient-x bg-gradient-to-r from-amber-400 via-yellow-500 to-amber-600 bg-clip-text text-transparent">
+                  VINTAGE BAGS
+                </span>
+              </h1>
+              <motion.img 
+                src="/142.gif"
+                alt="Aerodactyl"
+                className="w-20 h-20 object-contain animate-pulse"
+                style={{ animationDuration: '3s' }}
+              />
+            </div>
+            <button
+              onClick={() => setShowList(!showList)}
+              className="px-6 py-3 bg-purple-900/40 hover:bg-purple-800/50 text-white rounded-lg transition-colors"
+            >
+              {showList ? 'Show V. Bags' : 'View List'}
+            </button>
+          </div>
+
+          <AnimatePresence mode="wait">
+            {isEditMode && (
+              <motion.div
+                key="controls"
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                className="flex flex-wrap items-center justify-between gap-4 mx-4 mb-4 bg-black/20 backdrop-blur-sm p-4 rounded-xl"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-base font-medium text-white">Total Bags:</span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleBagCountChange(-1)}
+                      className="w-10 h-10 flex items-center justify-center bg-black/30 text-white rounded-lg text-xl"
+                    >
+                      -
+                    </button>
+                    <span className="text-xl font-bold text-white w-10 text-center">
+                      {vintageBagCount}
+                    </span>
+                    <button
+                      onClick={() => handleBagCountChange(1)}
+                      className="w-10 h-10 flex items-center justify-center bg-black/30 text-white rounded-lg text-xl"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {!showList ? (
+            <>
+              <div className="flex justify-between items-center mb-6">
+                <input
+                  type="text"
+                  value={currentUser.name}
+                  onChange={(e) => setCurrentUser({ ...currentUser, name: e.target.value })}
+                  placeholder="Enter user name"
+                  className="flex-1 px-4 py-2 bg-white/10 rounded-lg text-white placeholder-white/50 mr-4"
+                />
+                {users.length === 0 && (
+                  <button
+                    onClick={() => setIsEditMode(!isEditMode)}
+                    className="px-4 py-2 bg-purple-900/40 hover:bg-purple-800/50 text-white rounded-lg transition-colors"
+                  >
+                    {isEditMode ? 'Done' : 'Bag Count'}
+                  </button>
+                )}
+              </div>
+
+              <div className="grid grid-cols-10 gap-2 mb-6">
+                {Array.from({ length: vintageBagCount }, (_, i) => i + 1).map(number => {
+                  const isTaken = users.some(user => 
+                    user.name !== currentUser.name && user.numbers.includes(number)
+                  );
+                  const isSelected = currentUser.numbers.has(number);
+
+                  return (
+                    <motion.div
+                      key={number}
+                      onClick={() => !isTaken && handleNumberClick(number)}
+                      className={`
+                        relative flex items-center justify-center p-4
+                        rounded-lg cursor-pointer text-base font-bold shadow-lg
+                        ${isTaken ? 'bg-red-500/50 cursor-not-allowed' :
+                          isSelected ? 'bg-yellow-500/50' :
+                          'bg-blue-900/50 hover:bg-blue-800/50'}
+                        text-white min-h-[3rem]
+                      `}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      {number}
+                    </motion.div>
+                  );
+                })}
+              </div>
+
+              <div className="flex justify-between items-center">
+                <div className="text-white">
+                  Selected numbers: {Array.from(currentUser.numbers).sort((a, b) => a - b).join(', ')}
+                </div>
+                <button
+                  onClick={handleSave}
+                  className="px-6 py-3 bg-green-600/60 text-white rounded-lg transition-colors"
+                >
+                  {editingUser ? 'Update' : 'Save'}
+                </button>
+              </div>
+            </>
+          ) : (
+            <div className="bg-white/10 rounded-xl p-4">
+              <table className="w-full">
+                <thead>
+                  <tr className="text-white border-b border-white/20">
+                    <th className="py-2 text-left">Name</th>
+                    <th className="py-2 text-left">Numbers</th>
+                    <th className="py-2 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {users.map(user => (
+                    <tr key={user.name} className="text-white border-b border-white/10">
+                      <td className="py-2">{user.name}</td>
+                      <td className="py-2">{user.numbers.sort((a, b) => a - b).join(', ')}</td>
+                      <td className="py-2 text-right">
+                        <button
+                          onClick={() => handleEdit(user)}
+                          className="px-3 py-1 bg-blue-500/50 rounded-lg mr-2"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDelete(user.name)}
+                          className="px-3 py-1 bg-red-500/50 rounded-lg"
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
 
-        {/* Edit Mode Controls */}
-        <AnimatePresence mode="wait">
-          {isEditMode && (
-  <motion.div
-    key="controls"
-    initial={{ opacity: 0, y: -20 }}
-    animate={{ opacity: 1, y: 0 }}
-    exit={{ opacity: 0, y: -20 }}
-    className="flex flex-wrap items-center justify-between gap-4 mx-4 mb-4 bg-black/20 backdrop-blur-sm p-4 rounded-xl"
-  >
-    <div className="flex items-center gap-2">
-      <span className="text-base font-medium text-white">Total Bags:</span>
-      <div className="flex items-center gap-2">
-        <button
-          onClick={() => handleBagCountChange(-1)}
-          className="w-10 h-10 flex items-center justify-center bg-black/30 text-white rounded-lg text-xl"
-        >
-          -
-        </button>
-        <span className="text-xl font-bold text-white w-10 text-center">
-          {vintageBagCount}
-        </span>
-        <button
-          onClick={() => handleBagCountChange(1)}
-          className="w-10 h-10 flex items-center justify-center bg-black/30 text-white rounded-lg text-xl"
-        >
-          +
-        </button>
-      </div>
-    </div>
-  </motion.div>
-)}
-        </AnimatePresence>
-
-        {!showList ? (
-          <>
-            <div className="flex justify-between items-center mb-6">
-  <input
-    type="text"
-    value={currentUser.name}
-    onChange={(e) => setCurrentUser({ ...currentUser, name: e.target.value })}
-    placeholder="Enter user name"
-    className="flex-1 px-4 py-2 bg-white/10 rounded-lg text-white placeholder-white/50 mr-4"
-  />
-  {users.length === 0 && (
-    <button
-      onClick={() => setIsEditMode(!isEditMode)}
-      className="px-4 py-2 bg-purple-900/40 hover:bg-purple-800/50 text-white rounded-lg transition-colors"
-    >
-      {isEditMode ? 'Done' : 'Bag Count'}
-    </button>
-  )}
-</div>
-
-            <div className="grid grid-cols-10 gap-2 mb-6">
-  {Array.from({ length: vintageBagCount }, (_, i) => i + 1).map(number => {
-    const isTaken = users.some(user => 
-      user.name !== currentUser.name && user.numbers.includes(number)
-    );
-    const isSelected = currentUser.numbers.has(number);
-
-    return (
-      <motion.div
-        key={number}
-        onClick={() => !isTaken && handleNumberClick(number)}
-        className={`
-          relative flex items-center justify-center p-4
-          rounded-lg cursor-pointer text-base font-bold shadow-lg
-          ${isTaken ? 'bg-red-500/50 cursor-not-allowed' :
-            isSelected ? 'bg-yellow-500/50' :
-            'bg-blue-900/50 hover:bg-blue-800/50'}
-          text-white min-h-[3rem]
-        `}
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-      >
-        {number}
-      </motion.div>
-    );
-  })}
-</div>
-
-            <div className="flex justify-between items-center">
-              <div className="text-white">
-                Selected numbers: {Array.from(currentUser.numbers).sort((a, b) => a - b).join(', ')}
+        {/* Bottom section - Image Gallery (only shown when not in list view) */}
+        {!showList && (
+          <div className="flex-1 bg-white/10 backdrop-blur-md rounded-2xl shadow-xl p-6 relative">
+            {isGalleryEditMode ? (
+              <div className="w-full h-full flex items-center justify-center">
+                <div className="grid grid-cols-3 gap-4">
+                  {vintageImages.map((img, index) => (
+                    <div key={index} className="relative">
+                      <label className="cursor-pointer hover:text-blue-200 transition-colors text-lg md:text-xl p-8 border-2 border-dashed border-white/50 rounded-lg flex flex-col items-center gap-2">
+                        {img ? (
+                          <img src={img} alt={`Vintage ${index + 1}`} className="w-32 h-32 object-contain" />
+                        ) : (
+                          <>
+                            <span className="text-4xl text-white">+</span>
+                            <span className="text-white">Upload Image {index + 1}</span>
+                          </>
+                        )}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => handleImageUpload(index, e)}
+                          className="hidden"
+                        />
+                      </label>
+                      {img && (
+                        <button
+                          onClick={() => {
+                            const newImages = [...vintageImages];
+                            newImages[index] = null;
+                            setVintageImages(newImages);
+                            const nextValidIndex = getNextValidIndex(currentImageIndex, 1);
+                            if (nextValidIndex !== currentImageIndex) {
+                              setCurrentImageIndex(nextValidIndex);
+                            }
+                          }}
+                          className="absolute top-2 right-2 w-8 h-8 rounded-full bg-red-500/80 text-white flex items-center justify-center"
+                        >
+                          ×
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
-              <button
-                onClick={handleSave}
-                className="px-6 py-3 bg-green-600/60 text-white rounded-lg transition-colors"
-              >
-                {editingUser ? 'Update' : 'Save'}
-              </button>
-            </div>
-          </>
-        ) : (
-          <div className="bg-white/10 rounded-xl p-4">
-            <table className="w-full">
-              <thead>
-                <tr className="text-white border-b border-white/20">
-                  <th className="py-2 text-left">Name</th>
-                  <th className="py-2 text-left">Numbers</th>
-                  <th className="py-2 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {users.map(user => (
-                  <tr key={user.name} className="text-white border-b border-white/10">
-                    <td className="py-2">{user.name}</td>
-                    <td className="py-2">{user.numbers.sort((a, b) => a - b).join(', ')}</td>
-                    <td className="py-2 text-right">
-                      <button
-                        onClick={() => handleEdit(user)}
-                        className="px-3 py-1 bg-blue-500/50 rounded-lg mr-2"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleDelete(user.name)}
-                        className="px-3 py-1 bg-red-500/50 rounded-lg"
-                      >
-                        Delete
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            ) : (
+              <div className="relative w-full h-full">
+                <TransformWrapper
+                  initialScale={1}
+                  minScale={0.5}
+                  maxScale={4}
+                  doubleClick={{ mode: "reset" }}
+                  wheel={{ step: 0.1 }}
+                >
+                  <TransformComponent
+                    wrapperClass="!w-full !h-full"
+                    contentClass="!w-full !h-full"
+                  >
+                    {vintageImages[currentImageIndex] && (
+                      <img
+                        src={vintageImages[currentImageIndex]}
+                        alt={`Vintage ${currentImageIndex + 1}`}
+                        className="w-full h-full object-contain"
+                      />
+                    )}
+                  </TransformComponent>
+                </TransformWrapper>
+
+                {hasImages && vintageImages.filter(img => img !== null).length > 1 && (
+                  <>
+                    <button
+                      onClick={() => setCurrentImageIndex(getNextValidIndex(currentImageIndex, -1))}
+                      className="absolute left-4 top-1/2 transform -translate-y-1/2 h-48 w-16 rounded-xl bg-black/20 hover:bg-black/30 text-white flex items-center justify-center transition-colors"
+                    >
+                      <span className="text-3xl">←</span>
+                    </button>
+                    <button
+                      onClick={() => setCurrentImageIndex(getNextValidIndex(currentImageIndex, 1))}
+                      className="absolute right-4 top-1/2 transform -translate-y-1/2 h-48 w-16 rounded-xl bg-black/20 hover:bg-black/30 text-white flex items-center justify-center transition-colors"
+                    >
+                      <span className="text-3xl">→</span>
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* Edit Mode Toggle Button */}
+            <button
+              onClick={() => setIsGalleryEditMode(!isGalleryEditMode)}
+              className={`absolute top-4 right-4 px-6 py-3 rounded-lg transition-colors ${
+                isGalleryEditMode 
+                  ? 'bg-green-600/60 text-white' 
+                  : 'bg-blue-900/40 hover:bg-blue-800/50 text-white'
+              }`}
+            >
+              {isGalleryEditMode ? 'Done' : 'Edit Images'}
+            </button>
           </div>
         )}
       </div>
