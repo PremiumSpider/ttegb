@@ -337,53 +337,49 @@ const BountyModal = ({
         </div>
 
         {/* Image Upload */}
-        <div className="mb-4">
-          <label className="block text-white mb-2">
-            Bounty Image {isNewBounty ? 'New' : selectedBountyIndex + 1}
+     <div className="mb-4">
+  <label className="block text-white mb-2">
+    Bounty Image {isNewBounty ? 'New' : selectedBountyIndex + 1}
+  </label>
+  <div className="h-40 bg-purple-800/50 rounded-lg overflow-hidden">
+    {isProcessing ? (
+      <div className="w-full h-full flex items-center justify-center">
+        <div className="text-white">Processing image...</div>
+      </div>
+    ) : localState.image ? (
+      <div className="relative w-full h-full group">
+        <img 
+          src={localState.image} 
+          alt="Bounty Preview" 
+          className="w-full h-full object-contain"
+        />
+        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+          <label className="cursor-pointer text-white hover:text-purple-300 transition-colors">
+            Change Image
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleImageUpload}
+              className="hidden"
+              disabled={isProcessing}
+            />
           </label>
-          <div className="h-40 bg-purple-800/50 rounded-lg overflow-hidden">
-            {localState.image ? (
-              <div className="relative w-full h-full group">
-                <img 
-                  src={localState.image} 
-                  alt="Bounty Preview" 
-                  className="w-full h-full object-contain"
-                />
-                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4">
-                  <label className="cursor-pointer text-white hover:text-purple-300 transition-colors">
-                    Change
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageUpload}
-                      className="hidden"
-                      disabled={isProcessing}
-                    />
-                  </label>
-                  <button
-                    onClick={handleDeleteImage}
-                    className="text-red-300 hover:text-red-400 transition-colors"
-                  >
-                    Delete
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <label className="w-full h-full flex items-center justify-center cursor-pointer hover:bg-purple-700/50 transition-colors">
-                <span className="text-white">Click to Upload Image</span>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageUpload}
-                  className="hidden"
-                  disabled={isProcessing}
-                />
-              </label>
-            )}
-          </div>
         </div>
+      </div>
+    ) : (
+      <label className="w-full h-full flex items-center justify-center cursor-pointer hover:bg-purple-700/50 transition-colors">
+        <span className="text-white">Click to Upload Image {isNewBounty ? 'New' : selectedBountyIndex + 1}</span>
+        <input
+          type="file"
+          accept="image/*"
+          onChange={handleImageUpload}
+          className="hidden"
+          disabled={isProcessing}
+        />
+      </label>
+    )}
+  </div>
+</div>
 
         {/* Text Input */}
         <div className="mb-4">
@@ -999,19 +995,126 @@ const handleBagCountChange = (increment) => {
     return `${ratio.toFixed(1)}%`
   }
 
-  const handleImageUpload = (e) => {
-    const file = e.target.files[0]
-    if (file) {
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        const imageData = e.target.result
-        setPrizeImage(imageData)
-        localStorage.setItem('gachaBagImage', imageData)
-        setMarks([])
+const handleImageUpload = useCallback((e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  setIsProcessing(true);
+  setError(null);
+
+  const reader = new FileReader();
+  
+  reader.onload = (e) => {
+    const img = new Image();
+    img.onload = async () => {
+      try {
+        // Calculate initial dimensions
+        let { width, height } = calculateAspectRatioFit(
+          img.width,
+          img.height,
+          1200,
+          1200
+        );
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(img, 0, 0, width, height);
+
+        // Try different quality levels
+        const qualityLevels = [0.9, 0.7, 0.5, 0.3];
+        let output = null;
+
+        for (let quality of qualityLevels) {
+          try {
+            output = canvas.toDataURL('image/jpeg', quality);
+            
+            // If we got a reasonable size, break the loop
+            if (output.length < 800000) {
+              console.log(`Successfully compressed at quality: ${quality}`);
+              break;
+            }
+          } catch (err) {
+            console.log(`Failed at quality ${quality}, trying lower quality...`);
+            continue;
+          }
+        }
+
+        // If still no success, try more aggressive resizing
+        if (!output || output.length > 800000) {
+          console.log('Trying aggressive resizing...');
+          width *= 0.7;
+          height *= 0.7;
+          canvas.width = width;
+          canvas.height = height;
+          ctx.drawImage(img, 0, 0, width, height);
+          output = canvas.toDataURL('image/jpeg', 0.6);
+        }
+
+        if (!output) {
+          throw new Error('Failed to process image at any quality level');
+        }
+
+        setLocalState(prev => ({
+          ...prev,
+          image: output
+        }));
+        setIsDirty(true);
+        setIsProcessing(false);
+
+      } catch (err) {
+        console.error('Image processing error:', err);
+        setError('Failed to process image. Try a smaller image or different format.');
+        setIsProcessing(false);
       }
-      reader.readAsDataURL(file)
+
+      // Clear file input regardless of success/failure
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    };
+
+    img.onerror = () => {
+      setError('Failed to load image');
+      setIsProcessing(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    };
+
+    img.src = e.target.result;
+  };
+
+  reader.onerror = () => {
+    setError('Failed to read image file');
+    setIsProcessing(false);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  try {
+    reader.readAsDataURL(file);
+  } catch (err) {
+    setError('Failed to read file');
+    setIsProcessing(false);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
   }
+}, []);
+
+// Helper function to maintain aspect ratio
+const calculateAspectRatioFit = (srcWidth, srcHeight, maxWidth, maxHeight) => {
+  const ratio = Math.min(maxWidth / srcWidth, maxHeight / srcHeight);
+  return {
+    width: Math.round(srcWidth * ratio),
+    height: Math.round(srcHeight * ratio)
+  };
+};
 
   const CenterPopup = ({ text }) => (
   <motion.div
