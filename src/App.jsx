@@ -1,4 +1,6 @@
 
+
+
 import { motion, AnimatePresence } from 'framer-motion'
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch'
 import { useState, useEffect, useRef, useCallback } from 'react'
@@ -46,18 +48,24 @@ const handleImageUpload = useCallback((e) => {
   setIsProcessing(true);
   setError(null);
 
-  // REMOVED the 2MB check that was here:
-  // if (file.size > 2 * 1024 * 1024) {
-  //   setError('Image size must be less than 2MB');
-  //   setIsProcessing(false);
-  //   return;
-  // }
+  console.log('Starting upload process:', {
+    fileSize: file.size,
+    fileType: file.type,
+    fileName: file.name
+  });
 
   const reader = new FileReader();
   
   reader.onload = (e) => {
+    console.log('File read successful');
     const img = new Image();
+    
     img.onload = async () => {
+      console.log('Image loaded:', {
+        originalWidth: img.width,
+        originalHeight: img.height
+      });
+
       try {
         // Calculate initial dimensions
         let { width, height } = calculateAspectRatioFit(
@@ -67,69 +75,77 @@ const handleImageUpload = useCallback((e) => {
           1200
         );
 
+        console.log('Calculated dimensions:', { width, height });
+
         const canvas = document.createElement('canvas');
         canvas.width = width;
         canvas.height = height;
         const ctx = canvas.getContext('2d');
+        
+        if (!ctx) {
+          throw new Error('Failed to get canvas context');
+        }
+
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = 'high';
-        ctx.drawImage(img, 0, 0, width, height);
 
-        // Try different quality levels
-        const qualityLevels = [0.9, 0.7, 0.5, 0.3];
-        let output = null;
-
-        for (let quality of qualityLevels) {
-          try {
-            output = canvas.toDataURL('image/jpeg', quality);
-            
-            // If we got a reasonable size, break the loop
-            if (output.length < 800000) {
-              console.log(`Successfully compressed at quality: ${quality}`);
-              break;
-            }
-          } catch (err) {
-            console.log(`Failed at quality ${quality}, trying lower quality...`);
-            continue;
-          }
-        }
-
-        // If still no success, try more aggressive resizing
-        if (!output || output.length > 800000) {
-          console.log('Trying aggressive resizing...');
-          width *= 0.7;
-          height *= 0.7;
-          canvas.width = width;
-          canvas.height = height;
+        // First try: direct conversion at high quality
+        try {
           ctx.drawImage(img, 0, 0, width, height);
-          output = canvas.toDataURL('image/jpeg', 0.6);
+          const output = canvas.toDataURL('image/jpeg', 0.9);
+          
+          console.log('Initial conversion successful, size:', output.length);
+
+          setLocalState(prev => ({
+            ...prev,
+            image: output
+          }));
+          setIsDirty(true);
+          setIsProcessing(false);
+          return;
+        } catch (firstTryError) {
+          console.error('First try failed:', firstTryError);
+          // Continue to fallback methods
         }
 
-        if (!output) {
-          throw new Error('Failed to process image at any quality level');
-        }
+        // Fallback: Try with smaller dimensions
+        try {
+          const smallerWidth = Math.min(800, width);
+          const smallerHeight = Math.min(800, height);
+          canvas.width = smallerWidth;
+          canvas.height = smallerHeight;
+          
+          ctx.drawImage(img, 0, 0, smallerWidth, smallerHeight);
+          const output = canvas.toDataURL('image/jpeg', 0.8);
 
-        setLocalState(prev => ({
-          ...prev,
-          image: output
-        }));
-        setIsDirty(true);
-        setIsProcessing(false);
+          console.log('Fallback successful with smaller dimensions');
+
+          setLocalState(prev => ({
+            ...prev,
+            image: output
+          }));
+          setIsDirty(true);
+          setIsProcessing(false);
+          return;
+        } catch (fallbackError) {
+          console.error('Fallback attempt failed:', fallbackError);
+          throw new Error('Image processing failed after multiple attempts');
+        }
 
       } catch (err) {
-        console.error('Image processing error:', err);
-        setError('Failed to process image. Try a smaller image or different format.');
+        console.error('Final error:', err);
+        setError(`Processing error: ${err.message || 'Unknown error'}`);
         setIsProcessing(false);
       }
 
-      // Clear file input regardless of success/failure
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
     };
 
-    img.onerror = () => {
-      setError('Failed to load image');
+    img.onerror = (error) => {
+      console.error('Image load error:', error);
+      setError('Failed to load image. Please try another image.');
       setIsProcessing(false);
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
@@ -139,8 +155,9 @@ const handleImageUpload = useCallback((e) => {
     img.src = e.target.result;
   };
 
-  reader.onerror = () => {
-    setError('Failed to read image file');
+  reader.onerror = (error) => {
+    console.error('File read error:', error);
+    setError('Failed to read image file. Please try again.');
     setIsProcessing(false);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
@@ -150,13 +167,23 @@ const handleImageUpload = useCallback((e) => {
   try {
     reader.readAsDataURL(file);
   } catch (err) {
-    setError('Failed to read file');
+    console.error('Initial read error:', err);
+    setError('Failed to read file. Please try again.');
     setIsProcessing(false);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
   }
 }, []);
+
+// Helper function
+const calculateAspectRatioFit = (srcWidth, srcHeight, maxWidth, maxHeight) => {
+  const ratio = Math.min(maxWidth / srcWidth, maxHeight / srcHeight);
+  return {
+    width: Math.round(srcWidth * ratio),
+    height: Math.round(srcHeight * ratio)
+  };
+};
 
   const handleDeleteImage = () => {
     if (confirm('Are you sure you want to delete this image?')) {
