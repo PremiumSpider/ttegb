@@ -1187,6 +1187,8 @@ const calculateAspectRatioFit = (srcWidth, srcHeight, maxWidth, maxHeight) => {
   </motion.div>
 );
 
+
+
 const VintageBags = () => {
   // Original vintage bags state
   const [users, setUsers] = useState(() => {
@@ -1246,38 +1248,88 @@ const VintageBags = () => {
     return currentIndex;
   };
 
-  // Image upload handler
-  const handleImageUpload = (index, e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+// Utility function to check localStorage size in MB
+const getLocalStorageSize = () => {
+  let total = 0;
+  for (let key in localStorage) {
+    if (localStorage.hasOwnProperty(key)) {
+      total += localStorage[key].length;
+    }
+  }
+  return (total * 2) / (1024 * 1024); // Convert to MB
+};
 
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const img = new Image();
-      img.onload = () => {
+// Modified handleImageUpload
+const handleImageUpload = (index, e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const img = new Image();
+    img.onload = () => {
+      try {
         // Create canvas for resizing
         const canvas = document.createElement('canvas');
-        canvas.width = img.width / 2;
-        canvas.height = img.height / 2;
+        const maxDimension = 800;
+        let width = img.width;
+        let height = img.height;
+
+        // Calculate new dimensions
+        if (width > height) {
+          if (width > maxDimension) {
+            height = (height * maxDimension) / width;
+            width = maxDimension;
+          }
+        } else {
+          if (height > maxDimension) {
+            width = (width * maxDimension) / height;
+            height = maxDimension;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
         const ctx = canvas.getContext('2d');
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = 'high';
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        
-        // Convert to base64 with reduced quality
-        const resizedImage = canvas.toDataURL('image/jpeg', 0.7);
-        
+        ctx.drawImage(img, 0, 0, width, height);
+
+        // Compress image
+        const compressed = canvas.toDataURL('image/jpeg', 0.5);
+
+        // Update state
         const newImages = [...vintageImages];
-        newImages[index] = resizedImage;
+        newImages[index] = compressed;
         setVintageImages(newImages);
-        
-        // Set current index to uploaded image
         setCurrentImageIndex(index);
-      };
-      img.src = e.target.result;
+
+        // Try to save to localStorage only if space available
+        if (getLocalStorageSize() < 9) {
+          try {
+            localStorage.setItem('vintageBagImages', JSON.stringify(newImages));
+          } catch (storageError) {
+            console.log('Storage full - running in memory only');
+          }
+        } else {
+          console.log('Storage limit reached - running in memory only');
+        }
+
+      } catch (err) {
+        console.error('Image processing error:', err);
+        alert('Failed to process image. Please try a smaller image.');
+      }
     };
-    reader.readAsDataURL(file);
+
+    img.onerror = () => {
+      alert('Failed to load image. Please try a different image.');
+    };
+
+    img.src = e.target.result;
   };
+
+  reader.readAsDataURL(file);
+};
 
   // Original vintage bags handlers
   const handleNumberClick = (number) => {
@@ -1531,11 +1583,11 @@ const VintageBags = () => {
                           </>
                         )}
                         <input
-                          type="file"
-                          accept="image/*"
-                          onChange={(e) => handleImageUpload(index, e)}
-                          className="hidden"
-                        />
+        type="file"
+        accept="image/*"
+        onChange={(e) => handleImageUpload(index, e)}
+        className="hidden"
+      />
                       </label>
                       {img && (
                         <button
