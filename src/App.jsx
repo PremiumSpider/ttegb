@@ -915,28 +915,39 @@ const VintageBags = () => {
     setCurrentUser({ ...currentUser, numbers: newNumbers });
   };
 
-  const handleSave = () => {
-    if (!currentUser.name.trim()) {
-      alert('Please enter a name');
-      return;
-    }
-    
-    // Convert Set to Array before saving
-    const userToSave = {
-      ...currentUser,
-      numbers: Array.from(currentUser.numbers)
-    };
+const handleSave = () => {
+  if (!currentUser.name.trim()) {
+    alert('Please enter a name');
+    return;
+  }
 
-    if (editingUser) {
-      setUsers(users.map(user => 
-        user.name === editingUser.name ? userToSave : user
-      ));
-      setEditingUser(null);
-    } else {
-      setUsers([...users, userToSave]);
-    }
-    setCurrentUser({ name: '', numbers: new Set() });
+  // Check for duplicate names
+  const isDuplicateName = users.some(user => 
+    user.name.toLowerCase() === currentUser.name.toLowerCase() && 
+    (!editingUser || editingUser.name.toLowerCase() !== currentUser.name.toLowerCase())
+  );
+
+  if (isDuplicateName) {
+    alert('A user with this name already exists. Please choose a different name.');
+    return;
+  }
+  
+  // Convert Set to Array before saving
+  const userToSave = {
+    ...currentUser,
+    numbers: Array.from(currentUser.numbers)
   };
+
+  if (editingUser) {
+    setUsers(users.map(user => 
+      user.name === editingUser.name ? userToSave : user
+    ));
+    setEditingUser(null);
+  } else {
+    setUsers([...users, userToSave]);
+  }
+  setCurrentUser({ name: '', numbers: new Set() });
+};
 
   const handleEdit = (user) => {
     setEditingUser(user);
@@ -1051,33 +1062,33 @@ const VintageBags = () => {
   )}
 </div>
 
-            <div className="grid grid-cols-10 gap-1 mb-6">
-              {Array.from({ length: vintageBagCount }, (_, i) => i + 1).map(number => {
-                const isTaken = users.some(user => 
-                  user.name !== currentUser.name && user.numbers.includes(number)
-                );
-                const isSelected = currentUser.numbers.has(number);
+            <div className="grid grid-cols-10 gap-2 mb-6">
+  {Array.from({ length: vintageBagCount }, (_, i) => i + 1).map(number => {
+    const isTaken = users.some(user => 
+      user.name !== currentUser.name && user.numbers.includes(number)
+    );
+    const isSelected = currentUser.numbers.has(number);
 
-                return (
-                  <motion.div
-                    key={number}
-                    onClick={() => !isTaken && handleNumberClick(number)}
-                    className={`
-                      relative flex items-center justify-center p-2
-                      rounded-lg cursor-pointer text-sm font-bold shadow-lg
-                      ${isTaken ? 'bg-red-500/50 cursor-not-allowed' :
-                        isSelected ? 'bg-yellow-500/50' :
-                        'bg-blue-900/50 hover:bg-blue-800/50'}
-                      text-white
-                    `}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    {number}
-                  </motion.div>
-                );
-              })}
-            </div>
+    return (
+      <motion.div
+        key={number}
+        onClick={() => !isTaken && handleNumberClick(number)}
+        className={`
+          relative flex items-center justify-center p-4
+          rounded-lg cursor-pointer text-base font-bold shadow-lg
+          ${isTaken ? 'bg-red-500/50 cursor-not-allowed' :
+            isSelected ? 'bg-yellow-500/50' :
+            'bg-blue-900/50 hover:bg-blue-800/50'}
+          text-white min-h-[3rem]
+        `}
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+      >
+        {number}
+      </motion.div>
+    );
+  })}
+</div>
 
             <div className="flex justify-between items-center">
               <div className="text-white">
