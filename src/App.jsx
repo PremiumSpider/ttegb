@@ -542,6 +542,8 @@ const calculateAspectRatioFit = (srcWidth, srcHeight, maxWidth, maxHeight) => {
 
 function App() {
   // State declarations
+  const [isLocked, setIsLocked] = useState(true);
+  const [unlockSelections, setUnlockSelections] = useState(new Set());
   const [showProbCalc, setShowProbCalc] = useState(false);
   const [currentView, setCurrentView] = useState('bags')
   const [insuranceImages, setInsuranceImages] = useState([null, null, null, null, null])
@@ -600,6 +602,47 @@ const [hasImages, setHasImages] = useState(false);
   '/poke.png'
 ];
 const [currentTargetIndex, setCurrentTargetIndex] = useState(0);
+
+const LockButton = ({ isLocked, onToggle }) => (
+  <motion.button
+    onClick={onToggle}
+    whileHover={{ scale: 1.1 }}
+    whileTap={{ scale: 0.9 }}
+    className={`relative w-20 h-20 rounded-full flex items-center justify-center transition-all duration-300 ${
+      isLocked 
+        ? 'bg-red-500/30 hover:bg-red-500/40' 
+        : 'bg-green-500/30 hover:bg-green-500/40 animate-rainbow-border'
+    }`}
+  >
+    <motion.div
+      initial={false}
+      animate={{ rotate: isLocked ? 0 : 180 }}
+      transition={{ type: "spring", stiffness: 200, damping: 15 }}
+      className="text-2xl text-white"
+    >
+      {isLocked ? '🔒' : '🔓'}
+    </motion.div>
+    <style jsx>{`
+      @keyframes rainbow-border {
+        0% { 
+          border-color: rgba(255, 255, 255, 0.9);
+          box-shadow: 0 0 10px rgba(255, 255, 255, 0.7);
+        }
+        50% { 
+          border-color: rgba(0, 0, 0, 0.9);
+          box-shadow: 0 0 10px rgba(0, 0, 0, 0.7);
+        }
+        100% { 
+          border-color: rgba(255, 255, 255, 0.9);
+          box-shadow: 0 0 10px rgba(255, 255, 255, 0.7);
+        }
+      }
+      .animate-rainbow-border {
+        animation: rainbow-border 1s linear infinite;
+      }
+    `}</style>
+  </motion.button>
+);
 
 const ProbabilityCalculator = ({ isOpen, onClose, totalBags, totalChases }) => {
   const [bagsDrawn, setBagsDrawn] = useState(3);
@@ -1027,24 +1070,37 @@ const handleBagCountChange = (increment) => {
   }
   
 
-  const toggleNumber = (number) => {
-    const newSelected = new Set(selectedNumbers)
-    const newChases = new Set(chaseNumbers)
+ const toggleNumber = (number) => {
+  if (isLocked) return;
 
-    if (!newSelected.has(number)) {
-      newSelected.add(number)
-    } else if (!newChases.has(number)) {
-      newChases.add(number)
-      setRemainingChases(prev => prev - 1)
-    } else {
-      newSelected.delete(number)
-      newChases.delete(number)
-      setRemainingChases(prev => prev + 1)
-    }
+  const newSelected = new Set(selectedNumbers);
+  const newChases = new Set(chaseNumbers);
+  const newUnlockSelections = new Set(unlockSelections);
 
-    setSelectedNumbers(newSelected)
-    setChaseNumbers(newChases)
+  if (!newSelected.has(number)) {
+    // Adding a new number
+    newSelected.add(number);
+    // Add to unlockSelections to show rainbow border
+    newUnlockSelections.add(number);
+  } else if (!newChases.has(number)) {
+    // Converting to chase
+    newChases.add(number);
+    setRemainingChases(prev => prev - 1);
+    // Remove rainbow border when converting to chase
+    newUnlockSelections.delete(number);
+  } else {
+    // Deselecting completely
+    newSelected.delete(number);
+    newChases.delete(number);
+    setRemainingChases(prev => prev + 1);
+    // Remove from unlockSelections when deselecting
+    newUnlockSelections.delete(number);
   }
+
+  setSelectedNumbers(newSelected);
+  setChaseNumbers(newChases);
+  setUnlockSelections(newUnlockSelections);
+};
 
   const calculateHitRatio = () => {
     const remainingBags = bagCount - selectedNumbers.size
@@ -1135,12 +1191,20 @@ const calculateAspectRatioFit = (srcWidth, srcHeight, maxWidth, maxHeight) => {
 
 
 
-const VintageBags = () => {
+const VintageBags = ({ setCurrentView }) => {
   // Original vintage bags state
   const [users, setUsers] = useState(() => {
     const saved = localStorage.getItem('vintageBagsUsers');
-    return saved ? JSON.parse(saved) : [];
+    if (saved) {
+      const parsedUsers = JSON.parse(saved);
+      return parsedUsers.map(user => ({
+        ...user,
+        numbers: new Set(user.numbers)
+      }));
+    }
+    return [];
   });
+
   const [currentUser, setCurrentUser] = useState({ name: '', numbers: new Set() });
   const [isEditMode, setIsEditMode] = useState(false);
   const [showList, setShowList] = useState(false);
@@ -1173,7 +1237,12 @@ const VintageBags = () => {
   }, [vintageImages]);
 
   useEffect(() => {
-    localStorage.setItem('vintageBagsUsers', JSON.stringify(users));
+    localStorage.setItem('vintageBagsUsers', JSON.stringify(
+      users.map(user => ({
+        ...user,
+        numbers: Array.from(user.numbers)
+      }))
+    ));
   }, [users]);
 
   useEffect(() => {
@@ -1194,91 +1263,71 @@ const VintageBags = () => {
     return currentIndex;
   };
 
-// Utility function to check localStorage size in MB
-const getLocalStorageSize = () => {
-  let total = 0;
-  for (let key in localStorage) {
-    if (localStorage.hasOwnProperty(key)) {
-      total += localStorage[key].length;
-    }
-  }
-  return (total * 2) / (1024 * 1024); // Convert to MB
-};
+  // Handlers
+  const handleVintageImageUpload = (index, e) => {
+    const file = e.target.files[0];
+    if (!file) return;
 
-// Modified handleImageUpload
-const handleImageUpload = (index, e) => {
-  const file = e.target.files[0];
-  if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        try {
+          const canvas = document.createElement('canvas');
+          const maxDimension = 800;
+          let width = img.width;
+          let height = img.height;
 
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    const img = new Image();
-    img.onload = () => {
-      try {
-        // Create canvas for resizing
-        const canvas = document.createElement('canvas');
-        const maxDimension = 800;
-        let width = img.width;
-        let height = img.height;
-
-        // Calculate new dimensions
-        if (width > height) {
-          if (width > maxDimension) {
-            height = (height * maxDimension) / width;
-            width = maxDimension;
+          if (width > height) {
+            if (width > maxDimension) {
+              height = (height * maxDimension) / width;
+              width = maxDimension;
+            }
+          } else {
+            if (height > maxDimension) {
+              width = (width * maxDimension) / height;
+              height = maxDimension;
+            }
           }
-        } else {
-          if (height > maxDimension) {
-            width = (width * maxDimension) / height;
-            height = maxDimension;
-          }
-        }
 
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        ctx.imageSmoothingEnabled = true;
-        ctx.imageSmoothingQuality = 'high';
-        ctx.drawImage(img, 0, 0, width, height);
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = 'high';
+          ctx.drawImage(img, 0, 0, width, height);
 
-        // Compress image
-        const compressed = canvas.toDataURL('image/jpeg', 0.5);
+          const compressed = canvas.toDataURL('image/jpeg', 0.5);
+          const newImages = [...vintageImages];
+          newImages[index] = compressed;
+          setVintageImages(newImages);
+          setCurrentImageIndex(index);
 
-        // Update state
-        const newImages = [...vintageImages];
-        newImages[index] = compressed;
-        setVintageImages(newImages);
-        setCurrentImageIndex(index);
-
-        // Try to save to localStorage only if space available
-        if (getLocalStorageSize() < 9) {
           try {
             localStorage.setItem('vintageBagImages', JSON.stringify(newImages));
-          } catch (storageError) {
-            console.log('Storage full - running in memory only');
+          } catch (error) {
+            console.log('Storage error - running in memory only');
           }
-        } else {
-          console.log('Storage limit reached - running in memory only');
+
+        } catch (err) {
+          console.error('Image processing error:', err);
+          alert('Failed to process image. Please try a smaller image.');
         }
+      };
 
-      } catch (err) {
-        console.error('Image processing error:', err);
-        alert('Failed to process image. Please try a smaller image.');
-      }
+      img.onerror = () => {
+        alert('Failed to load image. Please try a different image.');
+      };
+
+      img.src = e.target.result;
     };
 
-    img.onerror = () => {
-      alert('Failed to load image. Please try a different image.');
-    };
-
-    img.src = e.target.result;
+    reader.readAsDataURL(file);
   };
 
-  reader.readAsDataURL(file);
-};
-
-  // Original vintage bags handlers
   const handleNumberClick = (number) => {
+    if (!currentUser) return;
+    
     const newNumbers = new Set(currentUser.numbers);
     if (newNumbers.has(number)) {
       newNumbers.delete(number);
@@ -1306,7 +1355,7 @@ const handleImageUpload = (index, e) => {
 
     const userToSave = {
       ...currentUser,
-      numbers: Array.from(currentUser.numbers)
+      numbers: currentUser.numbers // Keep as Set
     };
 
     if (editingUser) {
@@ -1335,30 +1384,29 @@ const handleImageUpload = (index, e) => {
     }
   };
 
-const handleVintageBagCountChange = (increment) => {
-  if (increment < 0) {
-    const newCount = vintageBagCount + increment;
-    const numbersInUse = users.some(user => 
-      user.numbers.some(num => num > newCount)
-    );
-    
-    if (numbersInUse) {
-      alert('Cannot reduce bags: Some numbers above ' + newCount + ' are in use');
-      return;
+  const handleVintageBagCountChange = (increment) => {
+    if (increment < 0) {
+      const newCount = vintageBagCount + increment;
+      const numbersInUse = users.some(user => 
+        Array.from(user.numbers).some(num => num > newCount)
+      );
+      
+      if (numbersInUse) {
+        alert('Cannot reduce bags: Some numbers above ' + newCount + ' are in use');
+        return;
+      }
     }
-  }
-  
-  setVintageBagCount(prev => Math.max(1, Math.min(100, prev + increment)));
-};
+    
+    setVintageBagCount(prev => Math.max(1, Math.min(100, prev + increment)));
+  };
 
-  return (
+ return (
     <div className="min-h-screen bg-gradient-to-br from-blue-600 via-teal-500 to-green-400 p-4">
       <div className="flex flex-col gap-4 h-full">
-        {/* Top section - Original Vintage Bags UI */}
         <div className="bg-white/10 backdrop-blur-md rounded-2xl shadow-xl p-6">
           <div className="flex justify-between items-center mb-6">
             <button
-              onClick={() => setCurrentView('bags')}
+              onClick={() => setCurrentView('bags')}  // This will now work correctly
               className="px-6 py-3 bg-blue-900/40 hover:bg-blue-800/50 text-white rounded-lg transition-colors"
             >
               Return to Bags
@@ -1403,25 +1451,25 @@ const handleVintageBagCountChange = (increment) => {
                 className="flex flex-wrap items-center justify-between gap-4 mx-4 mb-4 bg-black/20 backdrop-blur-sm p-4 rounded-xl"
               >
                 <div className="flex items-center gap-2">
-  <span className="text-base font-medium text-white">Total Bags:</span>
-  <div className="flex items-center gap-2">
-    <button
-      onClick={() => handleVintageBagCountChange(-1)}  // UPDATED
-      className="w-10 h-10 flex items-center justify-center bg-black/30 text-white rounded-lg text-xl"
-    >
-      -
-    </button>
-    <span className="text-xl font-bold text-white w-10 text-center">
-      {vintageBagCount}
-    </span>
-    <button
-      onClick={() => handleVintageBagCountChange(1)}   // UPDATED
-      className="w-10 h-10 flex items-center justify-center bg-black/30 text-white rounded-lg text-xl"
-    >
-      +
-    </button>
-  </div>
-</div>
+                  <span className="text-base font-medium text-white">Total Bags:</span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleVintageBagCountChange(-1)}
+                      className="w-10 h-10 flex items-center justify-center bg-black/30 text-white rounded-lg text-xl"
+                    >
+                      -
+                    </button>
+                    <span className="text-xl font-bold text-white w-10 text-center">
+                      {vintageBagCount}
+                    </span>
+                    <button
+                      onClick={() => handleVintageBagCountChange(1)}
+                      className="w-10 h-10 flex items-center justify-center bg-black/30 text-white rounded-lg text-xl"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
               </motion.div>
             )}
           </AnimatePresence>
@@ -1449,7 +1497,7 @@ const handleVintageBagCountChange = (increment) => {
               <div className="grid grid-cols-10 gap-2 mb-6">
                 {Array.from({ length: vintageBagCount }, (_, i) => i + 1).map(number => {
                   const isTaken = users.some(user => 
-                    user.name !== currentUser.name && user.numbers.includes(number)
+                    user.name !== currentUser.name && user.numbers.has(number)
                   );
                   const isSelected = currentUser.numbers.has(number);
 
@@ -1500,7 +1548,7 @@ const handleVintageBagCountChange = (increment) => {
                   {users.map(user => (
                     <tr key={user.name} className="text-white border-b border-white/10">
                       <td className="py-2">{user.name}</td>
-                      <td className="py-2">{user.numbers.sort((a, b) => a - b).join(', ')}</td>
+                      <td className="py-2">{Array.from(user.numbers).sort((a, b) => a - b).join(', ')}</td>
                       <td className="py-2 text-right">
                         <button
                           onClick={() => handleEdit(user)}
@@ -1523,7 +1571,7 @@ const handleVintageBagCountChange = (increment) => {
           )}
         </div>
 
-        {/* Bottom section - Image Gallery (only shown when not in list view) */}
+        {/* Bottom section - Image Gallery */}
         {!showList && (
           <div className="flex-1 bg-white/10 backdrop-blur-md rounded-2xl shadow-xl p-6 relative">
             {isGalleryEditMode ? (
@@ -1541,11 +1589,11 @@ const handleVintageBagCountChange = (increment) => {
                           </>
                         )}
                         <input
-        type="file"
-        accept="image/*"
-        onChange={(e) => handleImageUpload(index, e)}
-        className="hidden"
-      />
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => handleVintageImageUpload(index, e)}
+                          className="hidden"
+                        />
                       </label>
                       {img && (
                         <button
@@ -1994,6 +2042,22 @@ useEffect(() => {
   </button>
 </div>
 <div className="flex items-center justify-center gap-4 mb-2">
+  <LockButton 
+  isLocked={isLocked} 
+  onToggle={() => {
+    if (!isLocked) {
+      // When locking, clear all unlock selections
+      setUnlockSelections(new Set());
+    }
+    setIsLocked(!isLocked);
+  }} 
+/>
+  <motion.div
+    whileHover={{ scale: 1.1 }}
+    whileTap={{ scale: 0.9 }}
+    onClick={() => setCurrentView('vintage')}
+    className="cursor-pointer"
+  ></motion.div>
   <motion.div
   whileHover={{ scale: 1.1 }}
   whileTap={{ scale: 0.9 }}
@@ -2142,39 +2206,44 @@ useEffect(() => {
             
             <div className={`grid ${gridCols} gap-2 mx-4 flex-1 h-[calc(100vh-280px)]`}>
 {numbers.map((number) => (
-  <motion.div
-    key={number}
-    onClick={() => toggleNumber(number)}
-    className={`
-      relative flex items-center justify-center 
-      rounded-xl cursor-pointer text-xl font-bold shadow-lg
-      ${
-        chaseNumbers.has(number)
-          ? 'bg-gradient-to-r from-amber-400 via-yellow-500 to-amber-600 text-white'
-          : selectedNumbers.has(number)
-          ? useStoneStyle
-            ? 'bg-gradient-to-br from-slate-600 to-slate-800 text-gray-300'
-            : 'bg-gradient-to-r from-purple-600 to-purple-800 text-white'
-          : 'bg-gradient-to-r from-blue-700 to-blue-900 text-white hover:from-blue-600 hover:to-blue-800'
-      }
-    `}
-    whileHover={{ scale: 1.05 }}
-    whileTap={{ scale: 0.95 }}
-  >
-    {number}
-    {(selectedNumbers.has(number)) && (
-      <motion.div
-        className="absolute inset-0 flex items-center justify-center overflow-hidden"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-      >
-        <div className={`w-full h-0.5 ${useStoneStyle ? 'bg-gray-400' : 'bg-white'} transform rotate-45`} />
-      </motion.div>
-    )}
-{!selectedNumbers.has(number) && shimmerLevel > 0 && (
-  <SparklesEffect level={shimmerLevel} />
-)}
-  </motion.div>
+<motion.div
+  key={number}
+  onClick={() => toggleNumber(number)}
+  className={`
+    relative flex items-center justify-center 
+    rounded-xl cursor-pointer text-xl font-bold
+    ${
+      chaseNumbers.has(number)
+        ? 'bg-gradient-to-r from-amber-400 via-yellow-500 to-amber-600 text-white'
+        : selectedNumbers.has(number)
+        ? useStoneStyle
+          ? 'bg-gradient-to-br from-slate-600 to-slate-800 text-gray-300'
+          : 'bg-gradient-to-r from-purple-600 to-purple-800 text-white'
+        : 'bg-gradient-to-r from-blue-700 to-blue-900 text-white hover:from-blue-600 hover:to-blue-800'
+    }
+    ${!isLocked && unlockSelections.has(number) 
+      ? 'border-[3px] animate-rainbow-border' 
+      : 'shadow-md'
+    }
+    transition-all duration-300
+  `}
+  whileHover={{ scale: 1.05 }}
+  whileTap={{ scale: 0.95 }}
+>
+  {number}
+  {(selectedNumbers.has(number)) && (
+    <motion.div
+      className="absolute inset-0 flex items-center justify-center overflow-hidden"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+    >
+      <div className={`w-full h-0.5 ${useStoneStyle ? 'bg-gray-400' : 'bg-white'} transform rotate-45`} />
+    </motion.div>
+  )}
+  {!selectedNumbers.has(number) && shimmerLevel > 0 && (
+    <SparklesEffect level={shimmerLevel} />
+  )}
+</motion.div>
 ))}
             </div>
 
@@ -2570,7 +2639,7 @@ style={{
 </AnimatePresence>
 </div>
         ) : currentView === 'vintage' ? (
-        <VintageBags />
+       <VintageBags setCurrentView={setCurrentView} />
       ) : (
           <div className="relative h-[100dvh] max-h-[100dvh] w-full overflow-hidden">
   <div className="absolute top-safe-4 left-4 z-[60] flex gap-2">
