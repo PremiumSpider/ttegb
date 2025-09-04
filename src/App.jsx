@@ -542,6 +542,8 @@ const calculateAspectRatioFit = (srcWidth, srcHeight, maxWidth, maxHeight) => {
 
 function App() {
   // State declarations
+  const [animationKey, setAnimationKey] = useState(0);
+  const [flashingActive, setFlashingActive] = useState(false);
   const [isLocked, setIsLocked] = useState(true);
   const [unlockSelections, setUnlockSelections] = useState(new Set());
   const [showProbCalc, setShowProbCalc] = useState(false);
@@ -622,25 +624,37 @@ const LockButton = ({ isLocked, onToggle }) => (
     >
       {isLocked ? '🔒' : '🔓'}
     </motion.div>
-    <style jsx>{`
-      @keyframes rainbow-border {
-        0% { 
-          border-color: rgba(255, 255, 255, 0.9);
-          box-shadow: 0 0 10px rgba(255, 255, 255, 0.7);
-        }
-        50% { 
-          border-color: rgba(0, 0, 0, 0.9);
-          box-shadow: 0 0 10px rgba(0, 0, 0, 0.7);
-        }
-        100% { 
-          border-color: rgba(255, 255, 255, 0.9);
-          box-shadow: 0 0 10px rgba(255, 255, 255, 0.7);
-        }
-      }
-      .animate-rainbow-border {
-        animation: rainbow-border 1s linear infinite;
-      }
-    `}</style>
+<style jsx>{`
+  @keyframes flash-animation {
+    0%, 100% { 
+      background: rgba(255, 255, 255, 0.3);
+    }
+    50% { 
+      background: rgba(0, 0, 0, 0.3);
+    }
+  }
+  @keyframes rainbow-border {
+    0% { 
+      border-color: rgba(255, 255, 255, 0.9);
+      box-shadow: 0 0 10px rgba(255, 255, 255, 0.7);
+    }
+    50% { 
+      border-color: rgba(0, 0, 0, 0.9);
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.7);
+    }
+    100% { 
+      border-color: rgba(255, 255, 255, 0.9);
+      box-shadow: 0 0 10px rgba(255, 255, 255, 0.7);
+    }
+  }
+  .animate-flash {
+    animation: flash-animation 1s linear infinite;
+  }
+  .animate-rainbow-border {
+    animation: rainbow-border 1s linear infinite;
+  }
+`}</style>
+
   </motion.button>
 );
 
@@ -2042,12 +2056,13 @@ useEffect(() => {
   </button>
 </div>
 <div className="flex items-center justify-center gap-4 mb-2">
-  <LockButton 
+<LockButton 
   isLocked={isLocked} 
   onToggle={() => {
     if (!isLocked) {
-      // When locking, clear all unlock selections
       setUnlockSelections(new Set());
+    } else {
+      setAnimationKey(prev => prev + 1);
     }
     setIsLocked(!isLocked);
   }} 
@@ -2209,24 +2224,30 @@ useEffect(() => {
 <motion.div
   key={number}
   onClick={() => toggleNumber(number)}
-  className={`
-    relative flex items-center justify-center 
-    rounded-xl cursor-pointer text-xl font-bold
-    ${
-      chaseNumbers.has(number)
-        ? 'bg-gradient-to-r from-amber-400 via-yellow-500 to-amber-600 text-white'
-        : selectedNumbers.has(number)
-        ? useStoneStyle
-          ? 'bg-gradient-to-br from-slate-600 to-slate-800 text-gray-300'
-          : 'bg-gradient-to-r from-purple-600 to-purple-800 text-white'
-        : 'bg-gradient-to-r from-blue-700 to-blue-900 text-white hover:from-blue-600 hover:to-blue-800'
-    }
-    ${!isLocked && unlockSelections.has(number) 
-      ? 'border-[3px] animate-rainbow-border' 
-      : 'shadow-md'
-    }
-    transition-all duration-300
-  `}
+className={`
+  relative flex items-center justify-center 
+  rounded-xl cursor-pointer text-xl font-bold
+  ${
+    chaseNumbers.has(number)
+      ? 'bg-gradient-to-r from-amber-400 via-yellow-500 to-amber-600 text-white'
+      : selectedNumbers.has(number)
+      ? useStoneStyle
+        ? 'bg-gradient-to-br from-slate-600 to-slate-800 text-gray-300'
+        : 'bg-gradient-to-r from-purple-600 to-purple-800 text-white'
+      : !isLocked && unlockSelections.has(number)
+      ? 'animate-flash text-white'
+      : 'bg-gradient-to-r from-blue-700 to-blue-900 text-white hover:from-blue-600 hover:to-blue-800'
+  }
+  ${!isLocked && unlockSelections.has(number) 
+    ? 'border-[3px] animate-rainbow-border' 
+    : 'shadow-md'
+  }
+  transition-all duration-300
+`}
+  style={{
+    '--flash-animation-name': `flash${animationKey}`,
+    '--border-animation-name': `rainbow${animationKey}`
+  }}
   whileHover={{ scale: 1.05 }}
   whileTap={{ scale: 0.95 }}
 >
