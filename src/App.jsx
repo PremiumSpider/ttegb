@@ -1002,20 +1002,20 @@ const handleInsuranceImageClick = (e) => {
 
   // Bags and Chases handlers
 const handleBagCountChange = (increment) => {
+  const newCount = bagCount + increment;
+  
+  if (newCount < 1 || newCount > 100) return;
+  
   if (increment < 0) {
-    // Check if any numbers above the new count are in use
-    const newCount = vintageBagCount + increment;
-    const numbersInUse = users.some(user => 
-      user.numbers.some(num => num > newCount)
-    );
-    
-    if (numbersInUse) {
-      alert('Cannot reduce bags: Some numbers above ' + newCount + ' are in use');
+    const wouldBeInvalid = Array.from(selectedNumbers).some(num => num > newCount);
+    if (wouldBeInvalid) {
+      alert('Cannot reduce bags: Some selected numbers would become invalid');
       return;
     }
   }
   
-  setVintageBagCount(prev => Math.max(1, Math.min(100, prev + increment)));
+  setBagCount(newCount);
+  setNumbers(Array.from({ length: newCount }, (_, i) => i + 1));
 };
 
   const handleChaseCountChange = (increment) => {
@@ -1057,24 +1057,30 @@ const handleImageUpload = useCallback((e) => {
   const file = e.target.files[0];
   if (!file) return;
 
-  setIsProcessing(true);
-  setError(null);
-
   const reader = new FileReader();
-  
   reader.onload = (e) => {
     const img = new Image();
-    img.onload = async () => {
+    img.onload = () => {
       try {
-        // Calculate initial dimensions
-        let { width, height } = calculateAspectRatioFit(
-          img.width,
-          img.height,
-          1200,
-          1200
-        );
-
+        // Create canvas for resizing
         const canvas = document.createElement('canvas');
+        const maxDimension = 1200;
+        let width = img.width;
+        let height = img.height;
+
+        // Calculate new dimensions
+        if (width > height) {
+          if (width > maxDimension) {
+            height = (height * maxDimension) / width;
+            width = maxDimension;
+          }
+        } else {
+          if (height > maxDimension) {
+            width = (width * maxDimension) / height;
+            height = maxDimension;
+          }
+        }
+
         canvas.width = width;
         canvas.height = height;
         const ctx = canvas.getContext('2d');
@@ -1082,87 +1088,27 @@ const handleImageUpload = useCallback((e) => {
         ctx.imageSmoothingQuality = 'high';
         ctx.drawImage(img, 0, 0, width, height);
 
-        // Try different quality levels
-        const qualityLevels = [0.9, 0.7, 0.5, 0.3];
-        let output = null;
+        // Compress image
+        const compressed = canvas.toDataURL('image/jpeg', 0.7);
 
-        for (let quality of qualityLevels) {
-          try {
-            output = canvas.toDataURL('image/jpeg', quality);
-            
-            // If we got a reasonable size, break the loop
-            if (output.length < 800000) {
-              console.log(`Successfully compressed at quality: ${quality}`);
-              break;
-            }
-          } catch (err) {
-            console.log(`Failed at quality ${quality}, trying lower quality...`);
-            continue;
-          }
-        }
-
-        // If still no success, try more aggressive resizing
-        if (!output || output.length > 800000) {
-          console.log('Trying aggressive resizing...');
-          width *= 0.7;
-          height *= 0.7;
-          canvas.width = width;
-          canvas.height = height;
-          ctx.drawImage(img, 0, 0, width, height);
-          output = canvas.toDataURL('image/jpeg', 0.6);
-        }
-
-        if (!output) {
-          throw new Error('Failed to process image at any quality level');
-        }
-
-        setLocalState(prev => ({
-          ...prev,
-          image: output
-        }));
-        setIsDirty(true);
-        setIsProcessing(false);
+        // Update state and localStorage
+        setPrizeImage(compressed);
+        localStorage.setItem('gachaBagImage', compressed);
 
       } catch (err) {
         console.error('Image processing error:', err);
-        setError('Failed to process image. Try a smaller image or different format.');
-        setIsProcessing(false);
-      }
-
-      // Clear file input regardless of success/failure
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
+        alert('Failed to process image. Please try a smaller image.');
       }
     };
 
     img.onerror = () => {
-      setError('Failed to load image');
-      setIsProcessing(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
+      alert('Failed to load image. Please try a different image.');
     };
 
     img.src = e.target.result;
   };
 
-  reader.onerror = () => {
-    setError('Failed to read image file');
-    setIsProcessing(false);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  };
-
-  try {
-    reader.readAsDataURL(file);
-  } catch (err) {
-    setError('Failed to read file');
-    setIsProcessing(false);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  }
+  reader.readAsDataURL(file);
 }, []);
 
 // Helper function to maintain aspect ratio
@@ -1389,9 +1335,21 @@ const handleImageUpload = (index, e) => {
     }
   };
 
-  const handleBagCountChange = (increment) => {
-    setVintageBagCount(prev => Math.max(1, Math.min(100, prev + increment)));
-  };
+const handleVintageBagCountChange = (increment) => {
+  if (increment < 0) {
+    const newCount = vintageBagCount + increment;
+    const numbersInUse = users.some(user => 
+      user.numbers.some(num => num > newCount)
+    );
+    
+    if (numbersInUse) {
+      alert('Cannot reduce bags: Some numbers above ' + newCount + ' are in use');
+      return;
+    }
+  }
+  
+  setVintageBagCount(prev => Math.max(1, Math.min(100, prev + increment)));
+};
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-600 via-teal-500 to-green-400 p-4">
@@ -1445,25 +1403,25 @@ const handleImageUpload = (index, e) => {
                 className="flex flex-wrap items-center justify-between gap-4 mx-4 mb-4 bg-black/20 backdrop-blur-sm p-4 rounded-xl"
               >
                 <div className="flex items-center gap-2">
-                  <span className="text-base font-medium text-white">Total Bags:</span>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => handleBagCountChange(-1)}
-                      className="w-10 h-10 flex items-center justify-center bg-black/30 text-white rounded-lg text-xl"
-                    >
-                      -
-                    </button>
-                    <span className="text-xl font-bold text-white w-10 text-center">
-                      {vintageBagCount}
-                    </span>
-                    <button
-                      onClick={() => handleBagCountChange(1)}
-                      className="w-10 h-10 flex items-center justify-center bg-black/30 text-white rounded-lg text-xl"
-                    >
-                      +
-                    </button>
-                  </div>
-                </div>
+  <span className="text-base font-medium text-white">Total Bags:</span>
+  <div className="flex items-center gap-2">
+    <button
+      onClick={() => handleVintageBagCountChange(-1)}  // UPDATED
+      className="w-10 h-10 flex items-center justify-center bg-black/30 text-white rounded-lg text-xl"
+    >
+      -
+    </button>
+    <span className="text-xl font-bold text-white w-10 text-center">
+      {vintageBagCount}
+    </span>
+    <button
+      onClick={() => handleVintageBagCountChange(1)}   // UPDATED
+      className="w-10 h-10 flex items-center justify-center bg-black/30 text-white rounded-lg text-xl"
+    >
+      +
+    </button>
+  </div>
+</div>
               </motion.div>
             )}
           </AnimatePresence>
@@ -2370,6 +2328,21 @@ useEffect(() => {
         }`}
       />
     </motion.div>
+
+    {/* New CI (Change Image) Button */}
+    <motion.label
+      whileHover={{ scale: 1.1 }}
+      whileTap={{ scale: 0.9 }}
+      className="w-20 h-20 bg-blue-500/30 hover:bg-blue-500/40 rounded-full flex items-center justify-center text-white text-2xl font-bold shadow-lg transition-colors border border-white/20 cursor-pointer"
+    >
+      CI
+      <input
+        type="file"
+        accept="image/*"
+        onChange={handleImageUpload}
+        className="hidden"
+      />
+    </motion.label>
 
     <motion.button
       whileHover={{ scale: 1.1 }}
