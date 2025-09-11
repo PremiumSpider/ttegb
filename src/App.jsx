@@ -4,6 +4,220 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch'
 import { useState, useEffect, useRef, useCallback } from 'react'
+const IMAGE_STORAGE_KEY = 'storedImages';
+const MAX_STORAGE_SIZE = 4.5 * 1024 * 1024; // 4.5MB to be safe under 5MB limit
+
+// Utility to get current storage usage - only counts app-specific data
+const getStorageUsage = () => {
+  const relevantKeys = [
+    'gachaBagImage',
+    'insuranceImages',
+    'bounties',
+    'vintageBagImages',
+    'gachaBagState',
+    'vintageBagCount',
+    'vintageBagsUsers'
+  ];
+
+  let totalSize = 0;
+  for (let key of relevantKeys) {
+    const value = localStorage.getItem(key);
+    if (value) {
+      totalSize += value.length * 2; // Multiply by 2 for UTF-16 encoding
+    }
+  }
+  return totalSize;
+};
+// Optional: Add a debug function to see what's taking up space
+const debugStorageUsage = () => {
+  const usage = {};
+  for (let key in localStorage) {
+    if (localStorage.hasOwnProperty(key)) {
+      const size = localStorage[key].length * 2;
+      usage[key] = (size / (1024 * 1024)).toFixed(2) + ' MB';
+    }
+  }
+  console.log('Storage usage breakdown:', usage);
+};
+
+// Utility to get total size of stored images
+const getImageStorageSize = () => {
+  const storedImages = JSON.parse(localStorage.getItem(IMAGE_STORAGE_KEY) || '{}');
+  return Object.values(storedImages).reduce((total, img) => total + (img?.length || 0) * 2, 0);
+};
+
+// Image processing function with size optimization
+const processImage = async (file, options = {}) => {
+  const {
+    maxWidth = 1200,
+    maxHeight = 1200,
+    quality = 0.7,
+    targetSize = 500 * 1024 // 500KB target size
+  } = options;
+
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        try {
+          // Calculate dimensions maintaining aspect ratio
+          let { width, height } = calculateAspectRatioFit(
+            img.width,
+            img.height,
+            maxWidth,
+            maxHeight
+          );
+
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          
+          if (!ctx) {
+            throw new Error('Failed to get canvas context');
+          }
+
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = 'high';
+          ctx.drawImage(img, 0, 0, width, height);
+
+          // Progressive quality reduction if needed
+          let currentQuality = quality;
+          let output = canvas.toDataURL('image/jpeg', currentQuality);
+          
+          while (output.length > targetSize && currentQuality > 0.1) {
+            currentQuality -= 0.1;
+            output = canvas.toDataURL('image/jpeg', currentQuality);
+          }
+
+          resolve({
+            dataUrl: output,
+            width,
+            height,
+            size: output.length,
+            quality: currentQuality
+          });
+
+        } catch (err) {
+          reject(new Error('Image processing failed: ' + err.message));
+        }
+      };
+
+      img.onerror = () => reject(new Error('Failed to load image'));
+      img.src = e.target.result;
+    };
+
+    reader.onerror = () => reject(new Error('Failed to read file'));
+    reader.readAsDataURL(file);
+  });
+};
+
+// Main upload function
+const uploadImage = async (file, key, options = {}) => {
+  try {
+    // Process the image
+    const processed = await processImage(file, options);
+    
+    // Check if we need to store in localStorage
+    const currentUsage = getStorageUsage();
+    const willFitInStorage = (currentUsage + processed.dataUrl.length * 2) < MAX_STORAGE_SIZE;
+
+    // Return the processed image data and storage info
+    return {
+      ...processed,
+      storedLocally: willFitInStorage,
+      totalStorageUsed: getStorageUsage(),
+      warning: !willFitInStorage ? 'Image exceeds storage limit and will not persist after refresh' : null
+    };
+
+  } catch (error) {
+    throw new Error(`Upload failed: ${error.message}`);
+  }
+};
+
+// Storage popup component
+const StoragePopup = ({ totalSize, imageSize, isVisible, onClose }) => {
+  const remainingStorage = MAX_STORAGE_SIZE - totalSize;
+  const isNearLimit = remainingStorage < (MAX_STORAGE_SIZE * 0.1); // 10% remaining
+
+  // Add debug button
+  const showDebug = () => {
+    const usage = {};
+    for (let key in localStorage) {
+      if (localStorage.hasOwnProperty(key)) {
+        const size = localStorage[key].length * 2;
+        usage[key] = (size / (1024 * 1024)).toFixed(2) + ' MB';
+      }
+    }
+    console.log('Storage usage breakdown:', usage);
+  };
+
+  return (
+    <AnimatePresence>
+      {isVisible && (
+        <motion.div
+          initial={{ opacity: 0, y: 50 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 50 }}
+          className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 bg-black/70 backdrop-blur-sm px-6 py-4 rounded-xl"
+        >
+          <div className="text-white text-center space-y-2">
+            <div className="flex justify-between items-center mb-2">
+              <div className="font-bold text-lg">Storage Usage</div>
+              <div className="flex gap-2 items-center">
+                <button 
+                  onClick={showDebug}
+                  className="text-white/70 hover:text-white transition-colors text-sm px-2"
+                >
+                  Debug
+                </button>
+                <button 
+                  onClick={onClose}
+                  className="text-white/70 hover:text-white transition-colors w-8 h-8 flex items-center justify-center text-xl font-bold rounded-full hover:bg-white/10"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+            <div className="flex items-center gap-4">
+              <div>
+                <div className="text-sm opacity-70">App Storage</div>
+                <div>{(totalSize / (1024 * 1024)).toFixed(2)} MB</div>
+              </div>
+              <div className="w-px h-8 bg-white/20" />
+              <div>
+                <div className="text-sm opacity-70">Last Image</div>
+                <div>{(imageSize / (1024 * 1024)).toFixed(2)} MB</div>
+              </div>
+              <div className="w-px h-8 bg-white/20" />
+              <div>
+                <div className="text-sm opacity-70">Remaining</div>
+                <div className={isNearLimit ? 'text-red-400' : ''}>
+                  {(4.5 - (totalSize / (1024 * 1024))).toFixed(2)} MB
+                </div>
+              </div>
+            </div>
+            {isNearLimit && (
+              <div className="text-red-400 text-sm mt-2">
+                Warning: Storage space is running low. New images may not persist after refresh.
+              </div>
+            )}
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+};
+
+// Helper function to calculate aspect ratio
+const calculateAspectRatioFit = (srcWidth, srcHeight, maxWidth, maxHeight) => {
+  const ratio = Math.min(maxWidth / srcWidth, maxHeight / srcHeight);
+  return {
+    width: Math.round(srcWidth * ratio),
+    height: Math.round(srcHeight * ratio)
+  };
+};
 
 const BountyModal = ({ 
   isOpen, 
@@ -12,7 +226,9 @@ const BountyModal = ({
   bounties,
   currentBountyIndex,
   setCurrentBountyIndex, 
-  onDelete
+  onDelete,
+  setStorageInfo,
+  setShowStoragePopup
 }) => {
   const [localState, setLocalState] = useState({
     image: bounties[currentBountyIndex]?.image || null,
@@ -41,149 +257,50 @@ const BountyModal = ({
     }
   }, [isOpen, selectedBountyIndex, bounties]);
 
-const handleImageUpload = useCallback((e) => {
+// For bounty images (in BountyModal)
+const handleImageUpload = useCallback(async (e) => {
   const file = e.target.files[0];
   if (!file) return;
 
   setIsProcessing(true);
   setError(null);
 
-  console.log('Starting upload process:', {
-    fileSize: file.size,
-    fileType: file.type,
-    fileName: file.name
-  });
-
-  const reader = new FileReader();
-  
-  reader.onload = (e) => {
-    console.log('File read successful');
-    const img = new Image();
-    
-    img.onload = async () => {
-      console.log('Image loaded:', {
-        originalWidth: img.width,
-        originalHeight: img.height
-      });
-
-      try {
-        // Calculate initial dimensions
-        let { width, height } = calculateAspectRatioFit(
-          img.width,
-          img.height,
-          1200,
-          1200
-        );
-
-        console.log('Calculated dimensions:', { width, height });
-
-        const canvas = document.createElement('canvas');
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        
-        if (!ctx) {
-          throw new Error('Failed to get canvas context');
-        }
-
-        ctx.imageSmoothingEnabled = true;
-        ctx.imageSmoothingQuality = 'high';
-
-        // First try: direct conversion at high quality
-        try {
-          ctx.drawImage(img, 0, 0, width, height);
-          const output = canvas.toDataURL('image/jpeg', 0.9);
-          
-          console.log('Initial conversion successful, size:', output.length);
-
-          setLocalState(prev => ({
-            ...prev,
-            image: output
-          }));
-          setIsDirty(true);
-          setIsProcessing(false);
-          return;
-        } catch (firstTryError) {
-          console.error('First try failed:', firstTryError);
-          // Continue to fallback methods
-        }
-
-        // Fallback: Try with smaller dimensions
-        try {
-          const smallerWidth = Math.min(800, width);
-          const smallerHeight = Math.min(800, height);
-          canvas.width = smallerWidth;
-          canvas.height = smallerHeight;
-          
-          ctx.drawImage(img, 0, 0, smallerWidth, smallerHeight);
-          const output = canvas.toDataURL('image/jpeg', 0.8);
-
-          console.log('Fallback successful with smaller dimensions');
-
-          setLocalState(prev => ({
-            ...prev,
-            image: output
-          }));
-          setIsDirty(true);
-          setIsProcessing(false);
-          return;
-        } catch (fallbackError) {
-          console.error('Fallback attempt failed:', fallbackError);
-          throw new Error('Image processing failed after multiple attempts');
-        }
-
-      } catch (err) {
-        console.error('Final error:', err);
-        setError(`Processing error: ${err.message || 'Unknown error'}`);
-        setIsProcessing(false);
-      }
-
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-    };
-
-    img.onerror = (error) => {
-      console.error('Image load error:', error);
-      setError('Failed to load image. Please try another image.');
-      setIsProcessing(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-    };
-
-    img.src = e.target.result;
-  };
-
-  reader.onerror = (error) => {
-    console.error('File read error:', error);
-    setError('Failed to read image file. Please try again.');
-    setIsProcessing(false);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  };
-
   try {
-    reader.readAsDataURL(file);
-  } catch (err) {
-    console.error('Initial read error:', err);
-    setError('Failed to read file. Please try again.');
-    setIsProcessing(false);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+    const result = await uploadImage(file, `bounty-${Date.now()}`, {
+      maxWidth: 1200,
+      maxHeight: 1200,
+      quality: 0.7,
+      targetSize: 500 * 1024
+    });
+
+    setStorageInfo({
+      totalSize: result.totalStorageUsed,
+      imageSize: result.size
+    });
+    setShowStoragePopup(true);
+
+    // Show warning if image won't persist
+    if (result.warning) {
+      alert(result.warning);
     }
+
+    setLocalState(prev => ({
+      ...prev,
+      image: result.dataUrl
+    }));
+    setIsDirty(true);
+    setIsProcessing(false);
+
+  } catch (error) {
+    console.error('Upload failed:', error);
+    setError('Failed to process image. Please try another image.');
+    setIsProcessing(false);
+  }
+
+  if (fileInputRef.current) {
+    fileInputRef.current.value = '';
   }
 }, []);
-
-// Helper function
-const calculateAspectRatioFit = (srcWidth, srcHeight, maxWidth, maxHeight) => {
-  const ratio = Math.min(maxWidth / srcWidth, maxHeight / srcHeight);
-  return {
-    width: Math.round(srcWidth * ratio),
-    height: Math.round(srcHeight * ratio)
-  };
-};
 
   const handleDeleteImage = () => {
     if (confirm('Are you sure you want to delete this image?')) {
@@ -409,7 +526,7 @@ const calculateAspectRatioFit = (srcWidth, srcHeight, maxWidth, maxHeight) => {
             <input
               type="file"
               accept="image/*"
-              onChange={handleImageUpload}
+              onChange={(e) => handleImageUpload(e, 'bounty')}
               className="hidden"
               disabled={isProcessing}
             />
@@ -542,6 +659,8 @@ const calculateAspectRatioFit = (srcWidth, srcHeight, maxWidth, maxHeight) => {
 
 function App() {
   // State declarations
+const [showStoragePopup, setShowStoragePopup] = useState(false);
+const [storageInfo, setStorageInfo] = useState({ totalSize: 0, imageSize: 0 });
   const [animationKey, setAnimationKey] = useState(0);
   const [flashingActive, setFlashingActive] = useState(false);
   const [isLocked, setIsLocked] = useState(true);
@@ -970,59 +1089,6 @@ const handleBountyDelete = (index) => {
     setIsInsuranceEditMode(!isInsuranceEditMode);
   }
 
-const handleInsuranceImageUpload = (index, e) => {
-  const file = e.target.files[0];
-  if (!file) return;
-
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    // Create an image element
-    const img = new Image();
-    img.onload = () => {
-      // Always reduce the image size by half
-      let width = Math.floor(img.width / 2);
-      let height = Math.floor(img.height / 2);
-
-      // Create canvas for resizing
-      const canvas = document.createElement('canvas');
-      canvas.width = width;
-      canvas.height = height;
-      const ctx = canvas.getContext('2d');
-      
-      // Enable image smoothing
-      ctx.imageSmoothingEnabled = true;
-      ctx.imageSmoothingQuality = 'high';
-      
-      // Draw and resize image
-      ctx.drawImage(img, 0, 0, width, height);
-      
-      // Convert to base64 with reduced quality
-      const resizedImage = canvas.toDataURL('image/jpeg', 0.7);
-      
-      // Update state and localStorage
-      const newImages = [...insuranceImages];
-      newImages[index] = resizedImage;
-      setInsuranceImages(newImages);
-      
-      try {
-        localStorage.setItem('insuranceImages', JSON.stringify(newImages));
-      } catch (error) {
-        console.error('Error saving insurance images:', error);
-        // Handle the error appropriately
-      }
-      
-      // Find first non-null image index and set it as current
-      const firstValidIndex = newImages.findIndex(img => img !== null);
-      if (firstValidIndex !== -1) {
-        setCurrentInsuranceIndex(firstValidIndex);
-      }
-    };
-
-    img.src = e.target.result;
-  };
-  reader.readAsDataURL(file);
-};
-
 const handleInsuranceImageClick = (e) => {
   if (!imageContainerRef.current) return;
   
@@ -1122,64 +1188,113 @@ const handleBagCountChange = (increment) => {
     const ratio = (remainingChases / remainingBags) * 100
     return `${ratio.toFixed(1)}%`
   }
-
-const handleImageUpload = useCallback((e) => {
+// For prize images
+const handlePrizeImageUpload = async (e) => {
   const file = e.target.files[0];
   if (!file) return;
 
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    const img = new Image();
-    img.onload = () => {
-      try {
-        // Create canvas for resizing
-        const canvas = document.createElement('canvas');
-        const maxDimension = 1200;
-        let width = img.width;
-        let height = img.height;
+  try {
+    const result = await uploadImage(file, `prize-${Date.now()}`, {
+      maxWidth: 1200,
+      maxHeight: 1200,
+      quality: 0.7,
+      targetSize: 500 * 1024
+    });
 
-        // Calculate new dimensions
-        if (width > height) {
-          if (width > maxDimension) {
-            height = (height * maxDimension) / width;
-            width = maxDimension;
-          }
-        } else {
-          if (height > maxDimension) {
-            width = (width * maxDimension) / height;
-            height = maxDimension;
-          }
-        }
+    setStorageInfo({
+      totalSize: result.totalStorageUsed,
+      imageSize: result.size
+    });
+    setShowStoragePopup(true);
 
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        ctx.imageSmoothingEnabled = true;
-        ctx.imageSmoothingQuality = 'high';
-        ctx.drawImage(img, 0, 0, width, height);
+    if (result.warning) {
+      alert(result.warning);
+    }
 
-        // Compress image
-        const compressed = canvas.toDataURL('image/jpeg', 0.7);
+    setPrizeImage(result.dataUrl);
+    if (result.storedLocally) {
+      localStorage.setItem('gachaBagImage', result.dataUrl);
+    }
 
-        // Update state and localStorage
-        setPrizeImage(compressed);
-        localStorage.setItem('gachaBagImage', compressed);
+  } catch (error) {
+    console.error('Upload failed:', error);
+    alert('Failed to process image. Please try a smaller image.');
+  }
+};
 
-      } catch (err) {
-        console.error('Image processing error:', err);
-        alert('Failed to process image. Please try a smaller image.');
-      }
-    };
+// For insurance images
+const handleInsuranceImageUpload = async (index, e) => {
+  const file = e.target.files[0];
+  if (!file) return;
 
-    img.onerror = () => {
-      alert('Failed to load image. Please try a different image.');
-    };
+  try {
+    const result = await uploadImage(file, `insurance-${index}-${Date.now()}`, {
+      maxWidth: 1200,
+      maxHeight: 1200,
+      quality: 0.7,
+      targetSize: 500 * 1024
+    });
 
-    img.src = e.target.result;
-  };
+    setStorageInfo({
+      totalSize: result.totalStorageUsed,
+      imageSize: result.size
+    });
+    setShowStoragePopup(true);
 
-  reader.readAsDataURL(file);
-}, []);
+    if (result.warning) {
+      alert(result.warning);
+    }
+
+    const newImages = [...insuranceImages];
+    newImages[index] = result.dataUrl;
+    setInsuranceImages(newImages);
+    
+    if (result.storedLocally) {
+      localStorage.setItem('insuranceImages', JSON.stringify(newImages));
+    }
+
+  } catch (error) {
+    console.error('Upload failed:', error);
+    alert('Failed to process image. Please try a smaller image.');
+  }
+};
+
+const handleImageUpload = useCallback(async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  try {
+    // Process the image
+    const result = await uploadImage(file, `prize-${Date.now()}`, {
+      maxWidth: 1200,
+      maxHeight: 1200,
+      quality: 0.7,
+      targetSize: 500 * 1024
+    });
+
+    // Show storage popup
+    setStorageInfo({
+      totalSize: result.totalStorageUsed,
+      imageSize: result.size
+    });
+    setShowStoragePopup(true);
+
+    // Show warning if needed
+    if (result.warning) {
+      alert(result.warning);
+    }
+
+    // Update state and localStorage
+    setPrizeImage(result.dataUrl);
+    if (result.storedLocally) {
+      localStorage.setItem('gachaBagImage', result.dataUrl);
+    }
+
+  } catch (error) {
+    console.error('Image processing error:', error);
+    alert('Failed to process image. Please try a smaller image.');
+  }
+}, [setStorageInfo, setShowStoragePopup]);
 
 // Helper function to maintain aspect ratio
 const calculateAspectRatioFit = (srcWidth, srcHeight, maxWidth, maxHeight) => {
@@ -1278,67 +1393,47 @@ const VintageBags = ({ setCurrentView }) => {
   };
 
   // Handlers
-  const handleVintageImageUpload = (index, e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+// Updated Vintage Bags image upload handler
+const handleVintageImageUpload = async (index, e) => {
+  const file = e.target.files[0];
+  if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const img = new Image();
-      img.onload = () => {
-        try {
-          const canvas = document.createElement('canvas');
-          const maxDimension = 800;
-          let width = img.width;
-          let height = img.height;
+  try {
+    const result = await uploadImage(file, `vintage-${index}-${Date.now()}`, {
+      maxWidth: 800,
+      maxHeight: 800,
+      quality: 0.5,
+      targetSize: 500 * 1024
+    });
 
-          if (width > height) {
-            if (width > maxDimension) {
-              height = (height * maxDimension) / width;
-              width = maxDimension;
-            }
-          } else {
-            if (height > maxDimension) {
-              width = (width * maxDimension) / height;
-              height = maxDimension;
-            }
-          }
+    setStorageInfo({
+      totalSize: result.totalStorageUsed,
+      imageSize: result.size
+    });
+    setShowStoragePopup(true);
 
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext('2d');
-          ctx.imageSmoothingEnabled = true;
-          ctx.imageSmoothingQuality = 'high';
-          ctx.drawImage(img, 0, 0, width, height);
+    if (result.warning) {
+      alert(result.warning);
+    }
 
-          const compressed = canvas.toDataURL('image/jpeg', 0.5);
-          const newImages = [...vintageImages];
-          newImages[index] = compressed;
-          setVintageImages(newImages);
-          setCurrentImageIndex(index);
+    const newImages = [...vintageImages];
+    newImages[index] = result.dataUrl;
+    setVintageImages(newImages);
+    setCurrentImageIndex(index);
 
-          try {
-            localStorage.setItem('vintageBagImages', JSON.stringify(newImages));
-          } catch (error) {
-            console.log('Storage error - running in memory only');
-          }
+    if (result.storedLocally) {
+      try {
+        localStorage.setItem('vintageBagImages', JSON.stringify(newImages));
+      } catch (error) {
+        console.error('Storage error:', error);
+      }
+    }
 
-        } catch (err) {
-          console.error('Image processing error:', err);
-          alert('Failed to process image. Please try a smaller image.');
-        }
-      };
-
-      img.onerror = () => {
-        alert('Failed to load image. Please try a different image.');
-      };
-
-      img.src = e.target.result;
-    };
-
-    reader.readAsDataURL(file);
-  };
-
+  } catch (error) {
+    console.error('Upload failed:', error);
+    alert('Failed to process image. Please try a smaller image.');
+  }
+};
   const handleNumberClick = (number) => {
     if (!currentUser) return;
     
@@ -1724,7 +1819,12 @@ const handleReset = () => {
     localStorage.removeItem('gachaBagZoomState')
     localStorage.removeItem('insuranceImages')
     localStorage.removeItem('insuranceMarks')
-    localStorage.removeItem('bounties') // Add this line
+    localStorage.removeItem('bounties')
+    localStorage.removeItem('vintageBagImages')
+    localStorage.removeItem('vintageBagCount')
+    // localStorage.removeItem('vintageBagsUsers')
+    localStorage.removeItem(IMAGE_STORAGE_KEY)
+    
     setBagCount(50)
     setChaseCount(8)
     setRemainingChases(8)
@@ -1740,12 +1840,14 @@ const handleReset = () => {
     setInsuranceImages([null, null, null, null, null])
     setInsuranceMarks([[], [], [], [], []])
     setCurrentInsuranceIndex(0)
-    setBounties([]) // Add this line
-    setCurrentBountyIndex(0) // Add this line
+    setBounties([])
+    setCurrentBountyIndex(0)
+    setVintageImages([null, null, null])
+    setCurrentImageIndex(0)
   } catch (error) {
     console.error('Error resetting state:', error)
   }
-}
+};
 
   // Effects
  // Add this to your App component
@@ -2429,7 +2531,7 @@ className={`
       <input
         type="file"
         accept="image/*"
-        onChange={handleImageUpload}
+        onChange={(e) => handleImageUpload(e, 'prize')}
         className="hidden"
       />
     </motion.label>
@@ -2612,7 +2714,7 @@ style={{
           <input
             type="file"
             accept="image/*"
-            onChange={handleImageUpload}
+            onChange={handlePrizeImageUpload}
             className="hidden"
           />
           Upload a top chases image
@@ -2631,7 +2733,9 @@ style={{
   onDelete={handleBountyDelete}
   bounties={bounties}
   currentBountyIndex={currentBountyIndex}
-  setCurrentBountyIndex={setCurrentBountyIndex} // Add this line
+  setCurrentBountyIndex={setCurrentBountyIndex}
+  setStorageInfo={setStorageInfo}        // Add this
+  setShowStoragePopup={setShowStoragePopup}  // Add this
 />
   )}
 </AnimatePresence>
@@ -2660,7 +2764,11 @@ style={{
 </AnimatePresence>
 </div>
         ) : currentView === 'vintage' ? (
-       <VintageBags setCurrentView={setCurrentView} />
+       <VintageBags 
+  setCurrentView={setCurrentView} 
+  setStorageInfo={setStorageInfo}
+  setShowStoragePopup={setShowStoragePopup}
+/>
       ) : (
           <div className="relative h-[100dvh] max-h-[100dvh] w-full overflow-hidden">
   <div className="absolute top-safe-4 left-4 z-[60] flex gap-2">
@@ -2770,44 +2878,43 @@ style={{
       <div className="w-full h-full bg-blue-900/20 backdrop-blur-sm rounded-lg flex flex-col items-center justify-center text-white gap-4">
         <div className="grid grid-cols-5 gap-4">
           {insuranceImages.map((img, index) => (
-            <div key={index} className="relative">
-              <label className="cursor-pointer hover:text-blue-200 transition-colors text-lg md:text-xl p-8 border-2 border-dashed border-white/50 rounded-lg flex flex-col items-center gap-2">
-                {img ? (
-                  <img src={img} alt={`Insurance ${index + 1}`} className="w-32 h-32 object-contain" />
-                ) : (
-                  <>
-                    <span className="text-4xl">+</span>
-                    <span>Upload Image {index + 1}</span>
-                  </>
-                )}
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => handleInsuranceImageUpload(index, e)}
-                  className="hidden"
-                />
-              </label>
-              {img && (
-                <button
-                  onClick={() => {
-                    const newImages = [...insuranceImages];
-                    newImages[index] = null;
-                    setInsuranceImages(newImages);
-                    localStorage.setItem('insuranceImages', JSON.stringify(newImages));
-                    
-                    // Find next valid image index
-                    const nextValidIndex = getNextValidIndex(currentInsuranceIndex, 1);
-                    if (nextValidIndex !== currentInsuranceIndex) {
-                      setCurrentInsuranceIndex(nextValidIndex);
-                    }
-                  }}
-                  className="absolute top-2 right-2 w-8 h-8 rounded-full bg-red-500/80 text-white flex items-center justify-center"
-                >
-                  ×
-                </button>
-              )}
-            </div>
-          ))}
+  <div key={index} className="relative">
+    <label className="cursor-pointer hover:text-blue-200 transition-colors text-lg md:text-xl p-8 border-2 border-dashed border-white/50 rounded-lg flex flex-col items-center gap-2">
+      {img ? (
+        <img src={img} alt={`Insurance ${index + 1}`} className="w-32 h-32 object-contain" />
+      ) : (
+        <>
+          <span className="text-4xl">+</span>
+          <span>Upload Image {index + 1}</span>
+        </>
+      )}
+      <input
+        type="file"
+        accept="image/*"
+        onChange={(e) => handleInsuranceImageUpload(index, e)}
+        className="hidden"
+      />
+    </label>
+    {img && (
+      <button
+        onClick={() => {
+          const newImages = [...insuranceImages];
+          newImages[index] = null;
+          setInsuranceImages(newImages);
+          localStorage.setItem('insuranceImages', JSON.stringify(newImages));
+          
+          const nextValidIndex = getNextValidIndex(currentInsuranceIndex, 1);
+          if (nextValidIndex !== currentInsuranceIndex) {
+            setCurrentInsuranceIndex(nextValidIndex);
+          }
+        }}
+        className="absolute top-2 right-2 w-8 h-8 rounded-full bg-red-500/80 text-white flex items-center justify-center"
+      >
+        ×
+      </button>
+    )}
+  </div>
+))}
         </div>
       </div>
     ) : (
@@ -2893,6 +3000,12 @@ style={{
 </div>
         )}
       </div>
+     <StoragePopup 
+    isVisible={showStoragePopup}
+    totalSize={storageInfo.totalSize}
+    imageSize={storageInfo.imageSize}
+    onClose={() => setShowStoragePopup(false)}
+/>
     </div>
   );
 }
