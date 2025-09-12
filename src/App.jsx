@@ -1521,6 +1521,10 @@ const handleVintageImageUpload = async (index, e) => {
               Return to Bags
             </button>
             <div className="flex items-center gap-4">
+              {/* Unmarked count display */}
+              <div className="text-white font-bold text-xl bg-black/20 px-4 py-2 rounded-lg">
+                {vintageBagCount - users.reduce((total, user) => total + user.numbers.size, 0)}/{vintageBagCount}
+              </div>
               <motion.img 
                 src="/141.gif"
                 alt="Kaubops"
