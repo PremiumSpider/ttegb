@@ -123,11 +123,14 @@ const uploadImage = async (file, key, options = {}) => {
     const currentUsage = getStorageUsage();
     const willFitInStorage = (currentUsage + processed.dataUrl.length * 2) < MAX_STORAGE_SIZE;
 
+    // Calculate what the total storage would be after storing this image
+    const totalStorageAfterUpload = currentUsage + processed.dataUrl.length * 2;
+
     // Return the processed image data and storage info
     return {
       ...processed,
       storedLocally: willFitInStorage,
-      totalStorageUsed: getStorageUsage(),
+      totalStorageUsed: totalStorageAfterUpload,
       warning: !willFitInStorage ? 'Image exceeds storage limit and will not persist after refresh' : null
     };
 
@@ -278,11 +281,6 @@ const handleImageUpload = useCallback(async (e) => {
       imageSize: result.size
     });
     setShowStoragePopup(true);
-
-    // Show warning if image won't persist
-    if (result.warning) {
-      alert(result.warning);
-    }
 
     setLocalState(prev => ({
       ...prev,
@@ -1207,10 +1205,6 @@ const handlePrizeImageUpload = async (e) => {
     });
     setShowStoragePopup(true);
 
-    if (result.warning) {
-      alert(result.warning);
-    }
-
     setPrizeImage(result.dataUrl);
     if (result.storedLocally) {
       localStorage.setItem('gachaBagImage', result.dataUrl);
@@ -1241,10 +1235,6 @@ const handleInsuranceImageUpload = async (index, e) => {
     });
     setShowStoragePopup(true);
 
-    if (result.warning) {
-      alert(result.warning);
-    }
-
     const newImages = [...insuranceImages];
     newImages[index] = result.dataUrl;
     setInsuranceImages(newImages);
@@ -1272,17 +1262,11 @@ const handleImageUpload = useCallback(async (e) => {
       targetSize: 500 * 1024
     });
 
-    // Show storage popup
     setStorageInfo({
       totalSize: result.totalStorageUsed,
       imageSize: result.size
     });
     setShowStoragePopup(true);
-
-    // Show warning if needed
-    if (result.warning) {
-      alert(result.warning);
-    }
 
     // Update state and localStorage
     setPrizeImage(result.dataUrl);
@@ -1411,10 +1395,6 @@ const handleVintageImageUpload = async (index, e) => {
       imageSize: result.size
     });
     setShowStoragePopup(true);
-
-    if (result.warning) {
-      alert(result.warning);
-    }
 
     const newImages = [...vintageImages];
     newImages[index] = result.dataUrl;
@@ -2732,7 +2712,7 @@ style={{
 {/* Bounty Modal */}
 <AnimatePresence>
   {showBountyModal && (
-    <BountyModal
+      <BountyModal
   isOpen={showBountyModal}
   onClose={() => setShowBountyModal(false)}
   onSave={handleBountySave}
@@ -3006,12 +2986,14 @@ style={{
 </div>
         )}
       </div>
-     <StoragePopup 
-    isVisible={showStoragePopup}
-    totalSize={storageInfo.totalSize}
-    imageSize={storageInfo.imageSize}
-    onClose={() => setShowStoragePopup(false)}
-/>
+      
+      {/* Storage Popup */}
+      <StoragePopup
+        totalSize={storageInfo.totalSize}
+        imageSize={storageInfo.imageSize}
+        isVisible={showStoragePopup}
+        onClose={() => setShowStoragePopup(false)}
+      />
     </div>
   );
 }
