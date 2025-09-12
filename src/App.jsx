@@ -2361,7 +2361,7 @@ ${!isLocked && unlockSelections.has(number)
     exit={{ opacity: 0, scale: 0.5 }}
     className="absolute inset-0 flex items-center justify-center pointer-events-none z-10"
   >
-    <div className="text-[20rem] opacity-30 text-white drop-shadow-2xl">
+    <div className="text-[10rem] opacity-15 text-white drop-shadow-2xl">
       🔒
     </div>
   </motion.div>
