@@ -2340,10 +2340,12 @@ className={`
       ? 'animate-flash text-white'
       : 'bg-gradient-to-r from-blue-700 to-blue-900 text-white hover:from-blue-600 hover:to-blue-800'
   }
-  ${!isLocked && unlockSelections.has(number) 
-    ? 'border-[3px] animate-rainbow-border' 
-    : 'shadow-md'
-  }
+${isLocked 
+  ? 'border-[4px] border-red-400 shadow-lg shadow-red-400/50' 
+  : !isLocked && unlockSelections.has(number)
+  ? 'border-[3px] animate-rainbow-border' 
+  : 'shadow-md'
+}
   transition-all duration-300
 `}
   style={{
