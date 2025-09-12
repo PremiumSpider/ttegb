@@ -2305,7 +2305,7 @@ useEffect(() => {
               )}
             </AnimatePresence>
             
-            <div className={`grid ${gridCols} gap-2 mx-4 flex-1 h-[calc(100vh-280px)]`}>
+            <div className={`grid ${gridCols} gap-2 mx-4 flex-1 h-[calc(100vh-280px)] relative`}>
 {numbers.map((number) => (
 <motion.div
   key={number}
@@ -2324,9 +2324,7 @@ className={`
       ? 'animate-flash text-white'
       : 'bg-gradient-to-r from-blue-700 to-blue-900 text-white hover:from-blue-600 hover:to-blue-800'
   }
-${isLocked 
-  ? 'border-[4px] border-red-400 shadow-lg shadow-red-400/50' 
-  : !isLocked && unlockSelections.has(number)
+${!isLocked && unlockSelections.has(number)
   ? 'border-[3px] animate-rainbow-border' 
   : 'shadow-md'
 }
@@ -2354,6 +2352,20 @@ ${isLocked
   )}
 </motion.div>
 ))}
+
+{/* Big transparent lock overlay when locked */}
+{isLocked && (
+  <motion.div
+    initial={{ opacity: 0, scale: 0.5 }}
+    animate={{ opacity: 1, scale: 1 }}
+    exit={{ opacity: 0, scale: 0.5 }}
+    className="absolute inset-0 flex items-center justify-center pointer-events-none z-10"
+  >
+    <div className="text-[20rem] opacity-30 text-white drop-shadow-2xl">
+      🔒
+    </div>
+  </motion.div>
+)}
             </div>
 
             <div className="flex flex-wrap justify-center items-center gap-4 mx-4 mt-2 text-lg font-bold">
