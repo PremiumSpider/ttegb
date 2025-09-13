@@ -2519,8 +2519,8 @@ ${!isLocked && unlockSelections.has(number)
       className="cursor-pointer bg-black/10 rounded-full p-2 w-fit"
     >
       <img 
-        src="/61.gif"
-        alt="Blastoise"
+        src="/mdsprite.gif"
+        alt="Mega Dragonite"
         className={`w-16 h-16 object-contain opacity-40 hover:opacity-80 transition-opacity ${
           spriteActive ? 'ring-4 ring-purple-500/50 ring-opacity-50 rounded-full' : ''
         }`}
