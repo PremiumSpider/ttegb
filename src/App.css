@@ -26,6 +26,25 @@
   animation: gradient-x 3s linear infinite;
 }
 
+/* Irish Green Gradient Text Animations */
+.irish-green-title {
+  background: linear-gradient(45deg, #10b981, #059669, #047857, #065f46);
+  background-size: 200% 200%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: gradient-x 3s linear infinite;
+}
+
+.irish-green-subtitle {
+  background: linear-gradient(45deg, #22c55e, #16a34a, #15803d, #166534);
+  background-size: 200% 200%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: gradient-x 3s linear infinite;
+}
+
 /* Safe area utilities */
 .top-safe-4 {
   top: calc(1rem + var(--sat, 0px));

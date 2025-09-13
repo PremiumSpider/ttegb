@@ -2166,20 +2166,28 @@ useEffect(() => {
   className="cursor-pointer"
 >
   <img 
-    src="/pokegoons-logo.png" 
-    alt="PokeGoons Logo" 
+    src="/nmal.jpeg" 
+    alt="NeedMangaArt Logo" 
     className="w-20 h-20 object-contain animate-pulse"
     style={{ animationDuration: '3s' }}
   />
 </motion.div>
-  <h1 className="text-4xl font-black text-transparent bg-clip-text relative">
-    <span className="absolute inset-0 text-4xl font-black text-white blur-sm">
-      POKEGOONS BAGS
-    </span>
-    <span className="relative animate-gradient-x bg-gradient-to-r from-blue-400 via-teal-500 to-green-600 bg-clip-text text-transparent">
-      POKEGOONS BAGS
-    </span>
-  </h1>
+  <div className="text-center">
+    <h1 className="text-4xl font-black mb-1" style={{
+      fontFamily: 'Comic Sans MS, cursive, sans-serif',
+      color: '#10b981',
+      textShadow: '3px 3px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000'
+    }}>
+      Lucky Packs
+    </h1>
+    <h2 className="text-2xl font-bold" style={{
+      fontFamily: 'Comic Sans MS, cursive, sans-serif',
+      color: '#059669',
+      textShadow: '2px 2px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000'
+    }}>
+      Mystery Box Pull
+    </h2>
+  </div>
   <motion.div
     whileHover={{ scale: 1.1 }}
     whileTap={{ scale: 0.9 }}
@@ -2187,8 +2195,8 @@ useEffect(() => {
     className="w-20 h-20 cursor-pointer relative group"
   >
     <img 
-      src="/pokegoons-logo.png" 
-      alt="Probability Calculator" 
+      src="/nmal.jpeg" 
+    alt="NeedMangaArt Logo" 
       className="w-full h-20 object-contain animate-pulse group-hover:opacity-80 transition-opacity"
       style={{ animationDuration: '3s' }}
     />
