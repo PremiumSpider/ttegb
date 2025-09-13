@@ -2490,7 +2490,7 @@ ${!isLocked && unlockSelections.has(number)
         <span className="text-white text-lg md:text-xl">Mark Size:</span>
         <input
           type="range"
-          min="12"
+          min="4"
           max="17"
           value={markSize}
           onChange={(e) => setMarkSize(Number(e.target.value))}
@@ -2684,22 +2684,24 @@ ${!isLocked && unlockSelections.has(number)
             {marks.map((mark, index) => (
               <motion.div
                 key={index}
-                className="absolute text-blue-400 font-bold pointer-events-none"
-style={{ 
-  left: `${mark.x}%`,
-  top: `${mark.y}%`,
-  fontSize: `${mark.size || markSize}rem`,
-  textShadow: `
-  -3px -3px 0 #000,
-  3px -3px 0 #000,
-  -3px 3px 0 #000,
-  3px 3px 0 #000
-`
-}}
+                className="absolute pointer-events-none"
+                style={{ 
+                  left: `${mark.x}%`,
+                  top: `${mark.y}%`,
+                  width: `${(mark.size || markSize) * 2}rem`,
+                  height: `${(mark.size || markSize) * 2}rem`,
+                }}
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
               >
-                ✕
+                <img
+                  src="/pkbi2.png"
+                  alt="Chase marker"
+                  className="w-full h-full object-contain"
+                  style={{
+                    filter: 'drop-shadow(-3px -3px 0 #000) drop-shadow(3px -3px 0 #000) drop-shadow(-3px 3px 0 #000) drop-shadow(3px 3px 0 #000)'
+                  }}
+                />
               </motion.div>
             ))}
           </div>
