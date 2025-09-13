@@ -2073,8 +2073,8 @@ useEffect(() => {
 
   <div className="relative">
     <motion.img 
-  src="/9.gif"
-  alt="Blastoise"
+  src="/148.gif"
+  alt="Dragonair"
   className="w-20 h-20 object-contain cursor-pointer"
   onClick={() => {
     handleChaseCountChange(-1);
@@ -2100,8 +2100,8 @@ useEffect(() => {
 
   <div className="relative cursor-pointer" onClick={() => setIsEditMode(!isEditMode)}>
     <img 
-      src="/245.gif"
-      alt="Suicune"
+      src="149.gif"
+      alt="Dragonite"
       className="w-26 h-26 object-contain"
     />
     <div className="absolute inset-0 rounded-full hover:bg-white/10 transition-colors" />
@@ -2109,8 +2109,8 @@ useEffect(() => {
 
   <div className="relative">
     <motion.img 
-  src="/9.gif"
-  alt="Blastoise"
+  src="/148.gif"
+  alt="Dragonair"
   className="w-20 h-20 object-contain cursor-pointer"
   onClick={() => {
     handleChaseCountChange(1);
