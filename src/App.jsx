@@ -2059,14 +2059,14 @@ useEffect(() => {
   }
 
   return (
-    <div className="h-screen bg-gradient-to-br from-blue-600 via-teal-500 to-green-400 p-4">
+    <div className="h-screen bg-gradient-to-br from-green-100 via-emerald-200 to-green-300 p-4">
       <div className="h-full bg-white/10 backdrop-blur-md rounded-2xl shadow-xl">
         {currentView === 'bags' ? (
           <div className="h-full flex flex-col">
 <div className="flex items-center justify-between p-4">
   <button
     onClick={() => setCurrentView('chases')}
-    className="px-6 py-3 bg-gradient-to-r from-blue-600 to-teal-500 text-white rounded-xl shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
+    className="px-6 py-3 bg-emerald-700/80 border-2 border-emerald-600 hover:bg-emerald-600/80 hover:border-emerald-500 text-white rounded-xl shadow-lg hover:shadow-xl transition-all transform hover:scale-105 backdrop-blur-sm"
   >
     Top Chases
   </button>
@@ -2136,7 +2136,7 @@ useEffect(() => {
 
   <button
     onClick={() => setCurrentView('insurance')}
-    className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-xl shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
+    className="px-6 py-3 bg-emerald-700/80 border-2 border-emerald-600 hover:bg-emerald-600/80 hover:border-emerald-500 text-white rounded-xl shadow-lg hover:shadow-xl transition-all transform hover:scale-105 backdrop-blur-sm"
   >
     Insurance
   </button>
@@ -2327,10 +2327,10 @@ className={`
       : selectedNumbers.has(number)
       ? useStoneStyle
         ? 'bg-gradient-to-br from-slate-600 to-slate-800 text-gray-300'
-        : 'bg-gradient-to-r from-purple-600 to-purple-800 text-white'
+        : 'bg-gradient-to-r from-gray-500 to-gray-700 text-white'
       : !isLocked && unlockSelections.has(number)
       ? 'animate-flash text-white'
-      : 'bg-gradient-to-r from-blue-700 to-blue-900 text-white hover:from-blue-600 hover:to-blue-800'
+      : 'bg-gradient-to-r from-emerald-700 to-emerald-900 text-white hover:from-emerald-600 hover:to-emerald-800'
   }
 ${!isLocked && unlockSelections.has(number)
   ? 'border-[3px] animate-rainbow-border' 
