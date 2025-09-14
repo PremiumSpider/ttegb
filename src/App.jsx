@@ -2658,7 +2658,7 @@ ${!isLocked && unlockSelections.has(number)
               
               {/* Centered - Dynamic responsive info bar - smaller */}
               <div className="flex-1 flex justify-center">
-                <div className="px-2 sm:px-3 md:px-4 lg:px-6 py-1 sm:py-2 md:py-3 rounded-xl bg-white flex flex-wrap items-center justify-center gap-1 sm:gap-2 text-xs sm:text-base md:text-lg lg:text-xl xl:text-2xl">
+                <div className="px-2 sm:px-3 md:px-4 lg:px-6 py-1 sm:py-2 md:py-3 rounded-xl bg-white flex flex-wrap items-center justify-center gap-1 sm:gap-2 text-sm sm:text-lg md:text-xl lg:text-2xl xl:text-3xl">
                   <span className="text-red-500 font-bold whitespace-nowrap">{remainingChases} Chases</span>
                   <span className="text-black font-bold hidden sm:inline"> / </span>
                   <span className="text-black font-bold whitespace-nowrap">{bagCount - selectedNumbers.size - queueCount} Bags</span>
