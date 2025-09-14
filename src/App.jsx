@@ -1858,6 +1858,8 @@ const handleReset = () => {
     setCurrentBountyIndex(0)
     setVintageImages([null, null, null])
     setCurrentImageIndex(0)
+    setIsLocked(true)
+    setQueueCount(0)
   } catch (error) {
     console.error('Error resetting state:', error)
   }
@@ -2353,16 +2355,18 @@ className={`
   rounded-xl cursor-pointer text-5xl font-black
   ${
     chaseNumbers.has(number)
-      ? 'bg-gradient-to-r from-amber-400 via-yellow-500 to-amber-600 text-white'
+      ? !isLocked
+        ? 'bg-gradient-to-r from-red-500 via-red-600 to-red-700 text-white animate-flash'
+        : 'bg-gradient-to-r from-red-500 via-red-600 to-red-700 text-white'
       : selectedNumbers.has(number)
       ? useStoneStyle
         ? 'bg-gradient-to-br from-slate-600 to-slate-800 text-gray-300'
-        : 'bg-gradient-to-r from-gray-500 to-gray-700 text-white'
+        : 'bg-white text-gray-800'
       : !isLocked && unlockSelections.has(number)
       ? 'animate-flash text-white'
-      : 'bg-gradient-to-r from-emerald-700 to-emerald-900 text-white hover:from-emerald-600 hover:to-emerald-800'
+      : 'bg-white text-gray-800 hover:bg-gray-100'
   }
-${!isLocked && unlockSelections.has(number)
+${!isLocked && (unlockSelections.has(number) || chaseNumbers.has(number))
   ? 'border-[3px] animate-rainbow-border' 
   : 'shadow-md'
 }
@@ -2375,14 +2379,15 @@ ${!isLocked && unlockSelections.has(number)
   whileHover={{ scale: 1.05 }}
   whileTap={{ scale: 0.95 }}
 >
-  {number}
+  {!selectedNumbers.has(number) && number}
   {(selectedNumbers.has(number)) && (
     <motion.div
       className="absolute inset-0 flex items-center justify-center overflow-hidden"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
     >
-      <div className={`w-full h-0.5 ${useStoneStyle ? 'bg-gray-400' : 'bg-white'} transform rotate-45`} />
+      <div className={`w-full h-0.5 ${useStoneStyle ? 'bg-gray-400' : 'bg-gray-800'} transform rotate-45`} />
+      <div className={`w-full h-0.5 ${useStoneStyle ? 'bg-gray-400' : 'bg-gray-800'} transform -rotate-45 absolute`} />
     </motion.div>
   )}
   {!selectedNumbers.has(number) && shimmerLevel > 0 && (
@@ -2436,12 +2441,12 @@ ${!isLocked && unlockSelections.has(number)
                 </motion.button>
                 
                 {/* Bags Left display */}
-                <div className="px-6 py-3 rounded-xl bg-gradient-to-r from-blue-500/80 to-cyan-600/80 text-white text-2xl">
+                <div className="px-6 py-3 rounded-xl bg-white text-gray-800 text-2xl">
                   Bags: {bagCount - selectedNumbers.size - queueCount} / {bagCount}
                 </div>
               </div>
               
-              <div className="px-6 py-3 rounded-xl bg-gradient-to-r from-amber-400 via-yellow-500 to-amber-600 text-white text-2xl">
+              <div className="px-6 py-3 rounded-xl bg-gradient-to-r from-red-500 via-red-600 to-red-700 text-white text-2xl">
                 Chases: {remainingChases}
               </div>
               <div className="px-6 py-3 rounded-xl bg-gradient-to-r from-cyan-500/80 to-blue-600/80 text-white text-2xl">
