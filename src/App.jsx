@@ -692,7 +692,10 @@ const [storageInfo, setStorageInfo] = useState({ totalSize: 0, imageSize: 0 });
   const [showBountyModal, setShowBountyModal] = useState(false)
 const [shimmerLevel, setShimmerLevel] = useState(1) // 0 = off, 1-3 = shine levels
   const [showMinusPopup, setShowMinusPopup] = useState(false);
-const [showPlusPopup, setShowPlusPopup] = useState(false);
+  const [showPlusPopup, setShowPlusPopup] = useState(false);
+  const [queueCount, setQueueCount] = useState(0);
+  const [showQueueMinusPopup, setShowQueueMinusPopup] = useState(false);
+  const [showQueuePlusPopup, setShowQueuePlusPopup] = useState(false);
 const [bounties, setBounties] = useState([])
 const [currentBountyIndex, setCurrentBountyIndex] = useState(0)
   const [bountyText, setBountyText] = useState('')
@@ -1146,6 +1149,27 @@ const handleBagCountChange = (increment) => {
     setChaseNumbers(new Set())
     setIsCooked(false)
   }
+
+  // Queue management handlers
+  const handleQueueChange = (increment) => {
+    if (increment > 0) {
+      // Plus button: decrease queue (if > 0), increase visible bags left
+      if (queueCount > 0) {
+        setQueueCount(prev => prev - 1)
+        // Queue operations should NOT mark/unmark any boxes
+        // Only affects the display calculation
+      }
+      setShowQueuePlusPopup(true)
+      setTimeout(() => setShowQueuePlusPopup(false), 1000)
+    } else if (increment < 0) {
+      // Minus button: increase queue, decrease visible bags left
+      setQueueCount(prev => prev + 1)
+      // Queue operations should NOT mark/unmark any boxes
+      // Only affects the display calculation
+      setShowQueueMinusPopup(true)
+      setTimeout(() => setShowQueueMinusPopup(false), 1000)
+    }
+  }
   
 
  const toggleNumber = (number) => {
@@ -1156,10 +1180,14 @@ const handleBagCountChange = (increment) => {
   const newUnlockSelections = new Set(unlockSelections);
 
   if (!newSelected.has(number)) {
-    // Adding a new number
+    // Adding a new number - always mark the box
     newSelected.add(number);
-    // Add to unlockSelections to show rainbow border
     newUnlockSelections.add(number);
+    
+    // If there's a queue, subtract from it (but still mark the box)
+    if (queueCount > 0) {
+      setQueueCount(prev => prev - 1);
+    }
   } else if (!newChases.has(number)) {
     // Converting to chase
     newChases.add(number);
@@ -1167,10 +1195,12 @@ const handleBagCountChange = (increment) => {
     // Remove rainbow border when converting to chase
     newUnlockSelections.delete(number);
   } else {
-    // Deselecting completely
+    // Deselecting completely - add back to queue when unmarking
     newSelected.delete(number);
     newChases.delete(number);
     setRemainingChases(prev => prev + 1);
+    // Add back to queue when unmarking
+    setQueueCount(prev => prev + 1);
     // Remove from unlockSelections when deselecting
     newUnlockSelections.delete(number);
   }
@@ -2377,9 +2407,38 @@ ${!isLocked && unlockSelections.has(number)
             </div>
 
             <div className="flex flex-wrap justify-center items-center gap-4 mx-4 mt-2 text-lg font-bold">
-              <div className="px-4 py-2 rounded-xl bg-gradient-to-r from-blue-500/80 to-cyan-600/80 text-white">
-                Bags Left: {bagCount - selectedNumbers.size} / {bagCount}
+              <div className="flex items-center gap-2">
+                {/* Queue count display */}
+                <div className="px-4 py-2 rounded-xl text-gray-500">
+                  Q{queueCount}
+                </div>
+                
+                {/* Plus button */}
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => handleQueueChange(1)}
+                  className="w-10 h-10 bg-green-500/60 hover:bg-green-600/60 text-white rounded-lg flex items-center justify-center text-xl font-bold transition-colors"
+                >
+                  +
+                </motion.button>
+                
+                {/* Minus button */}
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => handleQueueChange(-1)}
+                  className="w-10 h-10 bg-red-500/60 hover:bg-red-600/60 text-white rounded-lg flex items-center justify-center text-xl font-bold transition-colors"
+                >
+                  -
+                </motion.button>
+                
+                {/* Bags Left display */}
+                <div className="px-4 py-2 rounded-xl bg-gradient-to-r from-blue-500/80 to-cyan-600/80 text-white">
+                  Bags Left: {bagCount - selectedNumbers.size - queueCount} / {bagCount}
+                </div>
               </div>
+              
               <div className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-400 via-yellow-500 to-amber-600 text-white">
                 Remaining Chases: {remainingChases}
               </div>
