@@ -2350,7 +2350,7 @@ useEffect(() => {
   onClick={() => toggleNumber(number)}
 className={`
   relative flex items-center justify-center 
-  rounded-xl cursor-pointer text-xl font-bold
+  rounded-xl cursor-pointer text-5xl font-black
   ${
     chaseNumbers.has(number)
       ? 'bg-gradient-to-r from-amber-400 via-yellow-500 to-amber-600 text-white'
@@ -2406,44 +2406,46 @@ ${!isLocked && unlockSelections.has(number)
 )}
             </div>
 
-            <div className="flex flex-wrap justify-center items-center gap-4 mx-4 mt-2 text-lg font-bold">
+            <div className="flex flex-wrap justify-center items-center gap-4 mx-4 mt-2 text-2xl font-bold">
               <div className="flex items-center gap-2">
-                {/* Queue count display */}
-                <div className="px-4 py-2 rounded-xl text-gray-500">
-                  Q{queueCount}
-                </div>
+                
                 
                 {/* Plus button */}
                 <motion.button
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
                   onClick={() => handleQueueChange(1)}
-                  className="w-10 h-10 bg-green-500/60 hover:bg-green-600/60 text-white rounded-lg flex items-center justify-center text-xl font-bold transition-colors"
+                  className="w-12 h-12 bg-green-500/60 hover:bg-green-600/60 text-white rounded-lg flex items-center justify-center text-2xl font-bold transition-colors"
                 >
                   +
                 </motion.button>
+
+                {/* Queue count display */}
+                <div className="px-6 py-3 rounded-xl text-gray-500 text-2xl">
+                  Q{queueCount}
+                </div>
                 
                 {/* Minus button */}
                 <motion.button
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
                   onClick={() => handleQueueChange(-1)}
-                  className="w-10 h-10 bg-red-500/60 hover:bg-red-600/60 text-white rounded-lg flex items-center justify-center text-xl font-bold transition-colors"
+                  className="w-12 h-12 bg-red-500/60 hover:bg-red-600/60 text-white rounded-lg flex items-center justify-center text-2xl font-bold transition-colors"
                 >
                   -
                 </motion.button>
                 
                 {/* Bags Left display */}
-                <div className="px-4 py-2 rounded-xl bg-gradient-to-r from-blue-500/80 to-cyan-600/80 text-white">
-                  Bags Left: {bagCount - selectedNumbers.size - queueCount} / {bagCount}
+                <div className="px-6 py-3 rounded-xl bg-gradient-to-r from-blue-500/80 to-cyan-600/80 text-white text-2xl">
+                  Bags: {bagCount - selectedNumbers.size - queueCount} / {bagCount}
                 </div>
               </div>
               
-              <div className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-400 via-yellow-500 to-amber-600 text-white">
-                Remaining Chases: {remainingChases}
+              <div className="px-6 py-3 rounded-xl bg-gradient-to-r from-amber-400 via-yellow-500 to-amber-600 text-white text-2xl">
+                Chases: {remainingChases}
               </div>
-              <div className="px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-500/80 to-blue-600/80 text-white">
-                Hit Ratio: {calculateHitRatio()}
+              <div className="px-6 py-3 rounded-xl bg-gradient-to-r from-cyan-500/80 to-blue-600/80 text-white text-2xl">
+                Hit R: {calculateHitRatio()}
               </div>
             </div>
 
