@@ -2621,12 +2621,12 @@ ${!isLocked && unlockSelections.has(number)
             <div className="flex items-center gap-2 sm:gap-4 mx-2 sm:mx-4 mt-2 text-lg sm:text-xl md:text-2xl font-bold">
               {/* Left side - Queue controls */}
               <div className="flex items-center gap-1 sm:gap-2">
-                {/* Plus button - smaller */}
+                {/* Plus button - twice as wide */}
                 <motion.button
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
                   onClick={() => handleQueueChange(1)}
-                  className="w-8 h-8 sm:w-10 sm:h-10 bg-transparent hover:bg-white/10 text-white rounded-lg flex items-center justify-center text-lg sm:text-xl font-bold transition-colors border border-white/30"
+                  className="w-16 h-8 sm:w-20 sm:h-10 bg-transparent hover:bg-white/10 text-white rounded-lg flex items-center justify-center text-lg sm:text-xl font-bold transition-colors border border-white/30"
                 >
                   +
                 </motion.button>
@@ -2636,12 +2636,12 @@ ${!isLocked && unlockSelections.has(number)
                   Q{queueCount}
                 </div>
                 
-                {/* Minus button - smaller */}
+                {/* Minus button - twice as wide */}
                 <motion.button
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
                   onClick={() => handleQueueChange(-1)}
-                  className="w-8 h-8 sm:w-10 sm:h-10 bg-transparent hover:bg-white/10 text-white rounded-lg flex items-center justify-center text-lg sm:text-xl font-bold transition-colors border border-white/30"
+                  className="w-16 h-8 sm:w-20 sm:h-10 bg-transparent hover:bg-white/10 text-white rounded-lg flex items-center justify-center text-lg sm:text-xl font-bold transition-colors border border-white/30"
                 >
                   -
                 </motion.button>
