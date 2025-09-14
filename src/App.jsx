@@ -696,6 +696,32 @@ const [shimmerLevel, setShimmerLevel] = useState(1) // 0 = off, 1-3 = shine leve
   const [queueCount, setQueueCount] = useState(0);
   const [showQueueMinusPopup, setShowQueueMinusPopup] = useState(false);
   const [showQueuePlusPopup, setShowQueuePlusPopup] = useState(false);
+  const [shamrockActive, setShamrockActive] = useState(false);
+  const [shamrocks, setShamrocks] = useState([]);
+  const [currentShamrockImageIndex, setCurrentShamrockImageIndex] = useState(0);
+
+  // Shamrock images array for cycling
+  const shamrockImages = [
+    '/burstshrock.webp',
+    '/coinshrock.webp', 
+    '/pinkshrock.webp',
+    '/rshrock.webp',
+    '/shinyshrock.webp'
+  ];
+
+  // Dragonair circle states
+  const [dragonairCircleActive, setDragonairCircleActive] = useState(false);
+  const [currentDragonairImageIndex, setCurrentDragonairImageIndex] = useState(0);
+  const [dragonairShamrocks, setDragonairShamrocks] = useState([]);
+
+  // Dragonair circle images array for cycling
+  const dragonairCircleImages = [
+    '/burstshrock.webp',
+    '/coinshrock.webp',
+    '/pinkshrock.webp',
+    '/rshrock.webp',
+    '/shinyshrock.webp'
+  ];
 const [bounties, setBounties] = useState([])
 const [currentBountyIndex, setCurrentBountyIndex] = useState(0)
   const [bountyText, setBountyText] = useState('')
@@ -705,6 +731,7 @@ const [currentBountyIndex, setCurrentBountyIndex] = useState(0)
   const [showBounty, setShowBounty] = useState(false)
   const [isPlaying, setIsPlaying] = useState(false)
   const animationFrameId = useRef(null)
+  const shamrockIntervalRef = useRef(null)
   const [vintageImages, setVintageImages] = useState(() => {
   const saved = localStorage.getItem('vintageBagImages');
   return saved ? JSON.parse(saved) : [null, null, null];
@@ -995,6 +1022,88 @@ const SparklesEffect = ({ level }) => {
     </div>
   );
 };
+// Shamrock system functions
+const createShamrock = () => {
+  const gridContainer = document.querySelector('.grid');
+  if (!gridContainer) return;
+  
+  const containerRect = gridContainer.getBoundingClientRect();
+  const newShamrock = {
+    id: Date.now() + Math.random(),
+    x: Math.random() * (containerRect.width - 120), // Account for shamrock size
+    y: Math.random() * (containerRect.height - 120),
+    opacity: 1
+  };
+  
+  setShamrocks(prev => [...prev, newShamrock]);
+  
+  // Remove shamrock after 2-4 seconds
+  setTimeout(() => {
+    setShamrocks(prev => prev.filter(s => s.id !== newShamrock.id));
+  }, 2000 + Math.random() * 2000);
+};
+
+const startShamrockSystem = () => {
+  if (shamrockIntervalRef.current) {
+    clearInterval(shamrockIntervalRef.current);
+  }
+  
+  shamrockIntervalRef.current = setInterval(() => {
+    createShamrock();
+  }, 1000 + Math.random() * 2000); // Random interval between 1-3 seconds
+};
+
+const stopShamrockSystem = () => {
+  if (shamrockIntervalRef.current) {
+    clearInterval(shamrockIntervalRef.current);
+    shamrockIntervalRef.current = null;
+  }
+  setShamrocks([]);
+};
+
+// Dragonair shamrock system functions
+const createDragonairShamrock = () => {
+  const gridContainer = document.querySelector('.grid');
+  if (!gridContainer) return;
+  
+  const containerRect = gridContainer.getBoundingClientRect();
+  const newShamrock = {
+    id: Date.now() + Math.random(),
+    x: Math.random() * (containerRect.width - 120), // Account for shamrock size
+    y: Math.random() * (containerRect.height - 120),
+    opacity: 1
+  };
+  
+  setDragonairShamrocks(prev => [...prev, newShamrock]);
+  
+  // Remove shamrock after 2-4 seconds
+  setTimeout(() => {
+    setDragonairShamrocks(prev => prev.filter(s => s.id !== newShamrock.id));
+  }, 2000 + Math.random() * 2000);
+};
+
+const dragonairIntervalRef = useRef(null);
+
+const startDragonairShamrockSystem = () => {
+  if (dragonairIntervalRef.current) {
+    clearInterval(dragonairIntervalRef.current);
+  }
+  
+  dragonairIntervalRef.current = setInterval(() => {
+    createDragonairShamrock();
+    // Cycle to next image each time a shamrock is created
+    setCurrentDragonairImageIndex((prev) => (prev + 1) % dragonairCircleImages.length);
+  }, 1000 + Math.random() * 2000); // Random interval between 1-3 seconds
+};
+
+const stopDragonairShamrockSystem = () => {
+  if (dragonairIntervalRef.current) {
+    clearInterval(dragonairIntervalRef.current);
+    dragonairIntervalRef.current = null;
+  }
+  setDragonairShamrocks([]);
+};
+
   // Add these helper functions inside your App component
 const startBounty = () => {
   if (!bounties.length) {
@@ -1973,6 +2082,9 @@ useEffect(() => {
       if (bountyTimeout.current) {
         clearTimeout(bountyTimeout.current)
       }
+      if (dragonairIntervalRef.current) {
+        clearInterval(dragonairIntervalRef.current)
+      }
     }
   }, [])
 
@@ -2105,17 +2217,25 @@ useEffect(() => {
 
   <div className="relative">
     <motion.img 
-  src="/148.gif"
-  alt="Dragonair"
-  className="w-20 h-20 object-contain cursor-pointer"
-  onClick={() => {
-    handleChaseCountChange(-1);
-    setShowMinusPopup(true);
-    setTimeout(() => setShowMinusPopup(false), 1000);
-  }}
-  whileHover={{ scale: 1.1 }}
-  whileTap={{ scale: 0.9 }}
-/>
+      src="/148.gif"
+      alt="Dragonair"
+      className={`w-20 h-20 object-contain cursor-pointer ${
+        dragonairCircleActive ? 'ring-4 ring-green-400 ring-opacity-70 rounded-full' : ''
+      }`}
+      onClick={() => {
+        if (!dragonairCircleActive) {
+          // Cycle to next dragonair circle image when turning on
+          setCurrentDragonairImageIndex((prev) => (prev + 1) % dragonairCircleImages.length);
+          setDragonairCircleActive(true);
+          startDragonairShamrockSystem();
+        } else {
+          setDragonairCircleActive(false);
+          stopDragonairShamrockSystem();
+        }
+      }}
+      whileHover={{ scale: 1.1 }}
+      whileTap={{ scale: 0.9 }}
+    />
     <AnimatePresence>
       {showMinusPopup && (
         <motion.div
@@ -2141,17 +2261,25 @@ useEffect(() => {
 
   <div className="relative">
     <motion.img 
-  src="/148.gif"
-  alt="Dragonair"
-  className="w-20 h-20 object-contain cursor-pointer"
-  onClick={() => {
-    handleChaseCountChange(1);
-    setShowPlusPopup(true);
-    setTimeout(() => setShowPlusPopup(false), 1000);
-  }}
-  whileHover={{ scale: 1.1 }}
-  whileTap={{ scale: 0.9 }}
-/>
+      src="/148.gif"
+      alt="Dragonair"
+      className={`w-20 h-20 object-contain cursor-pointer ${
+        dragonairCircleActive ? 'ring-4 ring-green-400 ring-opacity-70 rounded-full' : ''
+      }`}
+      onClick={() => {
+        if (!dragonairCircleActive) {
+          // Cycle to next dragonair circle image when turning on
+          setCurrentDragonairImageIndex((prev) => (prev + 1) % dragonairCircleImages.length);
+          setDragonairCircleActive(true);
+          startDragonairShamrockSystem();
+        } else {
+          setDragonairCircleActive(false);
+          stopDragonairShamrockSystem();
+        }
+      }}
+      whileHover={{ scale: 1.1 }}
+      whileTap={{ scale: 0.9 }}
+    />
     <AnimatePresence>
       {showPlusPopup && (
         <motion.div
@@ -2345,7 +2473,7 @@ useEffect(() => {
               )}
             </AnimatePresence>
             
-            <div className={`grid ${gridCols} gap-2 mx-4 flex-1 h-[calc(100vh-280px)] relative`}>
+            <div className={`grid ${gridCols} gap-2 mx-4 flex-1 h-[calc(100vh-280px)] relative grid`}>
 {numbers.map((number) => (
 <motion.div
   key={number}
@@ -2395,6 +2523,56 @@ ${!isLocked && (unlockSelections.has(number) || chaseNumbers.has(number))
   )}
 </motion.div>
 ))}
+
+{/* Shamrock pop-ups */}
+<AnimatePresence>
+  {shamrocks.map((shamrock) => (
+    <motion.div
+      key={shamrock.id}
+      initial={{ opacity: 0, scale: 0 }}
+      animate={{ opacity: shamrock.opacity, scale: 1 }}
+      exit={{ opacity: 0, scale: 0 }}
+      className="absolute pointer-events-none z-20"
+      style={{
+        left: `${shamrock.x}px`,
+        top: `${shamrock.y}px`,
+        width: '120px',
+        height: '120px'
+      }}
+    >
+      <img
+        src={shamrockImages[currentShamrockImageIndex]}
+        alt="Shamrock"
+        className="w-full h-full object-contain"
+      />
+    </motion.div>
+  ))}
+</AnimatePresence>
+
+{/* Dragonair shamrock pop-ups */}
+<AnimatePresence>
+  {dragonairShamrocks.map((shamrock) => (
+    <motion.div
+      key={shamrock.id}
+      initial={{ opacity: 0, scale: 0 }}
+      animate={{ opacity: shamrock.opacity, scale: 1 }}
+      exit={{ opacity: 0, scale: 0 }}
+      className="absolute pointer-events-none z-20"
+      style={{
+        left: `${shamrock.x}px`,
+        top: `${shamrock.y}px`,
+        width: '120px',
+        height: '120px'
+      }}
+    >
+      <img
+        src={dragonairCircleImages[currentDragonairImageIndex]}
+        alt="Dragonair Shamrock"
+        className="w-full h-full object-contain"
+      />
+    </motion.div>
+  ))}
+</AnimatePresence>
 
 {/* Big transparent lock overlay when locked */}
 {isLocked && (
@@ -2685,7 +2863,7 @@ ${!isLocked && (unlockSelections.has(number) || chaseNumbers.has(number))
   >
     <img 
       src={targetImages[currentTargetIndex]}
-      alt="Target"
+      alt="Poliwhirl-target"
       className="w-full h-full object-contain opacity-80"
     />
   </motion.div>
