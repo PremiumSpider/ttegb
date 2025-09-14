@@ -714,6 +714,7 @@ const [shimmerLevel, setShimmerLevel] = useState(0) // 0 = off, 1-3 = shine leve
   const [currentDragonairImageIndex, setCurrentDragonairImageIndex] = useState(0);
   const [dragonairShamrocks, setDragonairShamrocks] = useState([]);
   const [lockFlash, setLockFlash] = useState(false);
+  const [fontSizeLevel, setFontSizeLevel] = useState(2); // 0-4, where 2 is default
 
   // Dragonair circle images array for cycling
   const dragonairCircleImages = [
@@ -1285,6 +1286,27 @@ const handleBagCountChange = (increment) => {
       setShowQueueMinusPopup(true)
       setTimeout(() => setShowQueueMinusPopup(false), 1000)
     }
+  }
+
+  // Font size control handlers
+  const handleFontSizeChange = (increment) => {
+    setFontSizeLevel(prev => Math.max(0, Math.min(8, prev + increment)))
+  }
+
+  // Get font size class based on level (0-8, where 2 is default)
+  const getFontSizeClass = () => {
+    const fontSizes = [
+      'text-sm sm:text-base md:text-lg lg:text-xl xl:text-2xl',      // Level 0 - smallest
+      'text-base sm:text-lg md:text-xl lg:text-2xl xl:text-3xl',     // Level 1 - small
+      'text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl',      // Level 2 - default (current)
+      'text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl',     // Level 3 - large
+      'text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl',    // Level 4 - larger
+      'text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl',    // Level 5 - very large
+      'text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl',    // Level 6 - extra large
+      'text-5xl sm:text-6xl md:text-7xl lg:text-8xl xl:text-9xl',    // Level 7 - huge
+      'text-6xl sm:text-7xl md:text-8xl lg:text-9xl xl:text-10xl'    // Level 8 - massive
+    ]
+    return fontSizes[fontSizeLevel]
   }
   
 
@@ -2328,18 +2350,14 @@ useEffect(() => {
     setIsLocked(!isLocked);
   }} 
 />
+
+
   <motion.div
     whileHover={{ scale: 1.1 }}
     whileTap={{ scale: 0.9 }}
     onClick={() => setCurrentView('vintage')}
     className="cursor-pointer"
-  ></motion.div>
-  <motion.div
-  whileHover={{ scale: 1.1 }}
-  whileTap={{ scale: 0.9 }}
-  onClick={() => setCurrentView('vintage')}
-  className="cursor-pointer"
->
+  >
   <img 
     src="/nmal.jpeg" 
     alt="NeedMangaArt Logo" 
@@ -2458,16 +2476,37 @@ useEffect(() => {
       >
         Reset
       </button>
-      <button
-        onClick={() => setUseStoneStyle(!useStoneStyle)}
-        className={`px-3 py-1 text-white rounded-lg transition-colors text-sm ${
-          useStoneStyle 
-            ? 'bg-slate-600 hover:bg-slate-700' 
-            : 'bg-purple-600 hover:bg-purple-700'
-        }`}
-      >
-        {useStoneStyle ? 'Stone' : 'White'}
-      </button>
+      
+      {/* Font Size Controls next to Reset */}
+      <div className="flex items-center gap-2">
+        <motion.button
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          onClick={() => handleFontSizeChange(-1)}
+          disabled={fontSizeLevel === 0}
+          className={`w-12 h-8 rounded-lg flex items-center justify-center text-sm font-bold transition-colors border ${
+            fontSizeLevel === 0 
+              ? 'bg-gray-600/50 text-gray-400 border-gray-500/30 cursor-not-allowed' 
+              : 'bg-emerald-600/80 hover:bg-emerald-500/80 text-white border-emerald-500/50'
+          }`}
+        >
+          -T
+        </motion.button>
+        
+        <motion.button
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          onClick={() => handleFontSizeChange(1)}
+          disabled={fontSizeLevel === 8}
+          className={`w-12 h-8 rounded-lg flex items-center justify-center text-sm font-bold transition-colors border ${
+            fontSizeLevel === 8 
+              ? 'bg-gray-600/50 text-gray-400 border-gray-500/30 cursor-not-allowed' 
+              : 'bg-emerald-600/80 hover:bg-emerald-500/80 text-white border-emerald-500/50'
+          }`}
+        >
+          +T
+        </motion.button>
+      </div>
     </div>
   </motion.div>
 )}
@@ -2487,7 +2526,7 @@ useEffect(() => {
             </AnimatePresence>
             
             <div className={`grid ${gridCols} gap-1 sm:gap-2 mx-2 sm:mx-4 flex-1 overflow-y-auto relative grid`} style={{ maxHeight: 'calc(100vh - 200px)' }}>
-{numbers.map((number) => (
+                {numbers.map((number) => (
 <motion.div
   key={number}
   onClick={() => toggleNumber(number)}
@@ -2495,7 +2534,7 @@ className={`
   relative flex items-center justify-center 
   rounded-xl cursor-pointer font-black
   min-h-[3rem] sm:min-h-[3.5rem] md:min-h-[4rem] lg:min-h-[4.5rem] xl:min-h-[5rem]
-  text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl
+  ${getFontSizeClass()}
   ${
     chaseNumbers.has(number)
       ? !isLocked && unlockSelections.has(number)
@@ -2619,9 +2658,9 @@ ${!isLocked && unlockSelections.has(number)
             </div>
 
             <div className="flex items-center gap-2 sm:gap-4 mx-2 sm:mx-4 mt-2 text-lg sm:text-xl md:text-2xl font-bold">
-              {/* Left side - Queue controls */}
+              {/* Left side - Queue controls only */}
               <div className="flex items-center gap-1 sm:gap-2">
-                {/* Plus button - twice as wide */}
+                {/* Queue controls */}
                 <motion.button
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
@@ -2631,12 +2670,10 @@ ${!isLocked && unlockSelections.has(number)
                   +
                 </motion.button>
 
-                {/* Queue count display - smaller */}
                 <div className="px-1 sm:px-2 md:px-3 py-1 sm:py-2 rounded-xl text-gray-500 text-base sm:text-lg md:text-xl">
                   Q{queueCount}
                 </div>
                 
-                {/* Minus button - twice as wide */}
                 <motion.button
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
@@ -2735,12 +2772,12 @@ ${!isLocked && unlockSelections.has(number)
           <div className="relative h-[100dvh] max-h-[100dvh] w-full overflow-hidden">
   {/* Top navigation buttons */}
   <div className="absolute top-safe-4 left-4 z-[60] flex gap-2">
-      <button
-        onClick={() => setShowResetConfirm(true)}
-        className="px-3 py-1 bg-gradient-to-r from-red-500 to-pink-600 text-white rounded-lg hover:shadow-lg transition-colors text-sm font-medium"
-      >
-        Reset
-      </button>
+    <button
+      onClick={() => setCurrentView('bags')}
+      className="px-6 py-3 bg-blue-900/40 hover:bg-blue-800/50 text-white rounded-lg transition-colors text-lg md:text-xl"
+    >
+      Show Bags
+    </button>
     <button
       onClick={() => setCurrentView('insurance')}
       className="px-6 py-3 bg-purple-900/40 hover:bg-purple-800/50 text-white rounded-lg transition-colors text-lg md:text-xl"
