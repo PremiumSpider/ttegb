@@ -1694,15 +1694,15 @@ const handleVintageImageUpload = async (index, e) => {
                 className="flex flex-wrap items-center justify-between gap-4 mx-4 mb-4 bg-black/20 backdrop-blur-sm p-4 rounded-xl"
               >
                 <div className="flex items-center gap-2">
-                  <span className="text-base font-medium text-white">Total Bags:</span>
+                  <span className="text-base font-medium text-black">Total Bags:</span>
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => handleVintageBagCountChange(-1)}
-                      className="w-10 h-10 flex items-center justify-center bg-black/30 text-white rounded-lg text-xl"
+                      className="w-10 h-10 flex items-center justify-center bg-black/30 text-black rounded-lg text-xl"
                     >
                       -
                     </button>
-                    <span className="text-xl font-bold text-white w-10 text-center">
+                    <span className="text-xl font-bold text-black w-10 text-center">
                       {vintageBagCount}
                     </span>
                     <button
@@ -2223,7 +2223,7 @@ useEffect(() => {
     onClick={() => setCurrentView('chases')}
     className="px-6 py-3 bg-emerald-700/80 border-2 border-emerald-600 hover:bg-emerald-600/80 hover:border-emerald-500 text-white rounded-xl shadow-lg hover:shadow-xl transition-all transform hover:scale-105 backdrop-blur-sm"
   >
-    Top Chases
+    Chases
   </button>
 
   <div className="relative">
@@ -2408,7 +2408,7 @@ useEffect(() => {
   >
     <div className="flex items-center gap-4">
       <div className="flex items-center gap-2">
-        <span className="text-base font-medium text-white">Total Bags:</span>
+        <span className="text-base font-medium text-black">Total Bags:</span>
         <div className="flex items-center gap-2">
           <button
             onClick={() => handleBagCountChange(-1)}
@@ -2416,7 +2416,7 @@ useEffect(() => {
           >
             -
           </button>
-          <span className="text-xl font-bold text-white w-10 text-center">
+          <span className="text-xl font-bold text-black w-10 text-center">
             {bagCount}
           </span>
           <button
@@ -2429,7 +2429,7 @@ useEffect(() => {
       </div>
 
       <div className="flex items-center gap-2">
-        <span className="text-base font-medium text-white">Total Chases:</span>
+        <span className="text-base font-medium text-black">Total Chases:</span>
         <div className="flex items-center gap-2">
           <button
             onClick={() => handleChaseCountChange(-1)}
@@ -2437,7 +2437,7 @@ useEffect(() => {
           >
             -
           </button>
-          <span className="text-xl font-bold text-white w-10 text-center">
+          <span className="text-xl font-bold text-black w-10 text-center">
             {chaseCount}
           </span>
           <button
@@ -2448,17 +2448,17 @@ useEffect(() => {
           </button>
         </div>
       </div>
-
-<button
+{/* <button
   onClick={() => setShimmerLevel((prev) => (prev + 1) % 4)} // Cycle through 0-3
-  className={`px-4 py-2 text-white rounded-lg transition-colors ${
+  className={`px-4 py-2 text-green rounded-lg transition-colors ${
     shimmerLevel > 0
       ? `bg-blue-500/${shimmerLevel * 25} hover:bg-blue-600/${shimmerLevel * 25} ring-2 ring-blue-400`
       : 'bg-blue-500/30 hover:bg-blue-500/40'
   }`}
 >
   {shimmerLevel === 0 ? 'Shine Off' : `Shine ${shimmerLevel}`}
-</button>
+</button> */}
+
 
       <button
         onClick={() => setShowResetConfirm(true)}
@@ -2474,7 +2474,7 @@ useEffect(() => {
         : 'bg-purple-600 hover:bg-purple-700'
     }`}
   >
-    {useStoneStyle ? 'Stone' : 'Purple'}
+    {useStoneStyle ? 'Stone' : 'White'}
   </button>
     </div>
   </motion.div>
