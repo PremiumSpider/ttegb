@@ -2347,7 +2347,7 @@ useEffect(() => {
     style={{ animationDuration: '3s' }}
   />
 </motion.div>
-  <div className="text-center">
+              <div className="text-center">
     <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black mb-1" style={{
       fontFamily: 'Comic Sans MS, cursive, sans-serif',
       color: '#10b981',
@@ -2469,7 +2469,7 @@ useEffect(() => {
       </button>
         <button
     onClick={() => setUseStoneStyle(!useStoneStyle)}
-    className={`px-4 py-2 text-white rounded-lg transition-colors ${
+    className={`px-3 py-1 text-white rounded-lg transition-colors text-sm ${
       useStoneStyle 
         ? 'bg-slate-600 hover:bg-slate-700' 
         : 'bg-purple-600 hover:bg-purple-700'
@@ -2495,7 +2495,7 @@ useEffect(() => {
               )}
             </AnimatePresence>
             
-            <div className={`grid ${gridCols} gap-1 sm:gap-2 mx-2 sm:mx-4 flex-1 overflow-y-auto relative grid`} style={{ maxHeight: 'calc(100vh - 280px)' }}>
+            <div className={`grid ${gridCols} gap-1 sm:gap-2 mx-2 sm:mx-4 flex-1 overflow-y-auto relative grid`} style={{ maxHeight: 'calc(100vh - 200px)' }}>
 {numbers.map((number) => (
 <motion.div
   key={number}
@@ -2503,8 +2503,8 @@ useEffect(() => {
 className={`
   relative flex items-center justify-center 
   rounded-xl cursor-pointer font-black
-  min-h-[3.5rem] sm:min-h-[4rem] md:min-h-[4.5rem] lg:min-h-[5rem] xl:min-h-[6rem]
-  text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl
+  min-h-[3rem] sm:min-h-[3.5rem] md:min-h-[4rem] lg:min-h-[4.5rem] xl:min-h-[5rem]
+  text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl
   ${
     chaseNumbers.has(number)
       ? !isLocked && unlockSelections.has(number)
@@ -2630,41 +2630,41 @@ ${!isLocked && unlockSelections.has(number)
             <div className="flex items-center gap-2 sm:gap-4 mx-2 sm:mx-4 mt-2 text-lg sm:text-xl md:text-2xl font-bold">
               {/* Left side - Queue controls */}
               <div className="flex items-center gap-1 sm:gap-2">
-                {/* Plus button */}
+                {/* Plus button - smaller */}
                 <motion.button
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
                   onClick={() => handleQueueChange(1)}
-                  className="w-10 h-10 sm:w-12 sm:h-12 bg-transparent hover:bg-white/10 text-white rounded-lg flex items-center justify-center text-xl sm:text-2xl font-bold transition-colors border border-white/30"
+                  className="w-8 h-8 sm:w-10 sm:h-10 bg-transparent hover:bg-white/10 text-white rounded-lg flex items-center justify-center text-lg sm:text-xl font-bold transition-colors border border-white/30"
                 >
                   +
                 </motion.button>
 
-                {/* Queue count display */}
-                <div className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 rounded-xl text-gray-500 text-lg sm:text-xl md:text-2xl">
+                {/* Queue count display - smaller */}
+                <div className="px-1 sm:px-2 md:px-3 py-1 sm:py-2 rounded-xl text-gray-500 text-base sm:text-lg md:text-xl">
                   Q{queueCount}
                 </div>
                 
-                {/* Minus button */}
+                {/* Minus button - smaller */}
                 <motion.button
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
                   onClick={() => handleQueueChange(-1)}
-                  className="w-10 h-10 sm:w-12 sm:h-12 bg-transparent hover:bg-white/10 text-white rounded-lg flex items-center justify-center text-xl sm:text-2xl font-bold transition-colors border border-white/30"
+                  className="w-8 h-8 sm:w-10 sm:h-10 bg-transparent hover:bg-white/10 text-white rounded-lg flex items-center justify-center text-lg sm:text-xl font-bold transition-colors border border-white/30"
                 >
                   -
                 </motion.button>
               </div>
               
-              {/* Centered - Dynamic responsive info bar */}
+              {/* Centered - Dynamic responsive info bar - smaller */}
               <div className="flex-1 flex justify-center">
-                <div className="px-2 sm:px-4 md:px-6 lg:px-8 py-2 sm:py-3 md:py-4 rounded-xl bg-white flex flex-wrap items-center justify-center gap-1 sm:gap-2 text-sm sm:text-lg md:text-xl lg:text-2xl xl:text-3xl">
+                <div className="px-2 sm:px-3 md:px-4 lg:px-6 py-1 sm:py-2 md:py-3 rounded-xl bg-white flex flex-wrap items-center justify-center gap-1 sm:gap-2 text-xs sm:text-base md:text-lg lg:text-xl xl:text-2xl">
                   <span className="text-red-500 font-bold whitespace-nowrap">{remainingChases} Chases</span>
                   <span className="text-black font-bold hidden sm:inline"> / </span>
                   <span className="text-black font-bold whitespace-nowrap">{bagCount - selectedNumbers.size - queueCount} Bags</span>
                   <span className="text-blue-500 font-bold whitespace-nowrap hidden md:inline"> (Hit R: {calculateHitRatio()})</span>
                   {/* Show hit ratio on smaller screens in a more compact way */}
-                  <span className="text-blue-500 font-bold whitespace-nowrap md:hidden text-xs sm:text-sm"> {calculateHitRatio()}</span>
+                  <span className="text-blue-500 font-bold whitespace-nowrap md:hidden text-xs"> {calculateHitRatio()}</span>
                 </div>
               </div>
             </div>
@@ -2744,12 +2744,12 @@ ${!isLocked && unlockSelections.has(number)
           <div className="relative h-[100dvh] max-h-[100dvh] w-full overflow-hidden">
   {/* Top navigation buttons */}
   <div className="absolute top-safe-4 left-4 z-[60] flex gap-2">
-    <button
-      onClick={() => setCurrentView('bags')}
-      className="px-6 py-3 bg-blue-900/40 hover:bg-blue-800/50 text-white rounded-lg transition-colors text-lg md:text-xl"
-    >
-      Show Bags
-    </button>
+      <button
+        onClick={() => setShowResetConfirm(true)}
+        className="px-3 py-1 bg-gradient-to-r from-red-500 to-pink-600 text-white rounded-lg hover:shadow-lg transition-colors text-sm font-medium"
+      >
+        Reset
+      </button>
     <button
       onClick={() => setCurrentView('insurance')}
       className="px-6 py-3 bg-purple-900/40 hover:bg-purple-800/50 text-white rounded-lg transition-colors text-lg md:text-xl"
