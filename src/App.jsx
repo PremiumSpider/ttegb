@@ -2420,7 +2420,7 @@ ${!isLocked && (unlockSelections.has(number) || chaseNumbers.has(number))
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
                   onClick={() => handleQueueChange(1)}
-                  className="w-12 h-12 bg-green-500/60 hover:bg-green-600/60 text-white rounded-lg flex items-center justify-center text-2xl font-bold transition-colors"
+                  className="w-12 h-12 bg-transparent hover:bg-white/10 text-white rounded-lg flex items-center justify-center text-2xl font-bold transition-colors border border-white/30"
                 >
                   +
                 </motion.button>
@@ -2435,7 +2435,7 @@ ${!isLocked && (unlockSelections.has(number) || chaseNumbers.has(number))
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
                   onClick={() => handleQueueChange(-1)}
-                  className="w-12 h-12 bg-red-500/60 hover:bg-red-600/60 text-white rounded-lg flex items-center justify-center text-2xl font-bold transition-colors"
+                  className="w-12 h-12 bg-transparent hover:bg-white/10 text-white rounded-lg flex items-center justify-center text-2xl font-bold transition-colors border border-white/30"
                 >
                   -
                 </motion.button>
