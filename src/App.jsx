@@ -690,7 +690,7 @@ const [storageInfo, setStorageInfo] = useState({ totalSize: 0, imageSize: 0 });
   const [useStoneStyle, setUseStoneStyle] = useState(false);
   const [spriteActive, setSpriteActive] = useState(false)
   const [showBountyModal, setShowBountyModal] = useState(false)
-const [shimmerLevel, setShimmerLevel] = useState(1) // 0 = off, 1-3 = shine levels
+const [shimmerLevel, setShimmerLevel] = useState(0) // 0 = off, 1-3 = shine levels
   const [showMinusPopup, setShowMinusPopup] = useState(false);
   const [showPlusPopup, setShowPlusPopup] = useState(false);
   const [queueCount, setQueueCount] = useState(0);
@@ -1980,6 +1980,7 @@ const handleReset = () => {
     setCurrentImageIndex(0)
     setIsLocked(true)
     setQueueCount(0)
+    setShimmerLevel(0)
   } catch (error) {
     console.error('Error resetting state:', error)
   }
@@ -2139,7 +2140,7 @@ if (savedState) {
   setMarks(parsedState.marks || [])
   setMarkSize(parsedState.markSize || 4)
   setUseStoneStyle(parsedState.useStoneStyle || false)
-  setShimmerLevel(parsedState.shimmerLevel !== undefined ? parsedState.shimmerLevel : 1)
+  setShimmerLevel(parsedState.shimmerLevel !== undefined ? parsedState.shimmerLevel : 0)
   setCurrentTargetIndex(parsedState.currentTargetIndex || 0)
 } else {
   setBagCount(50)
