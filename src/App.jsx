@@ -2348,14 +2348,14 @@ useEffect(() => {
   />
 </motion.div>
   <div className="text-center">
-    <h1 className="text-6xl font-black mb-1" style={{
+    <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black mb-1" style={{
       fontFamily: 'Comic Sans MS, cursive, sans-serif',
       color: '#10b981',
       textShadow: '4px 4px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000'
     }}>
       Lucky Packs
     </h1>
-    <h2 className="text-4xl font-bold" style={{
+    <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold" style={{
       fontFamily: 'Comic Sans MS, cursive, sans-serif',
       color: '#059669',
       textShadow: '3px 3px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000'
@@ -2495,14 +2495,16 @@ useEffect(() => {
               )}
             </AnimatePresence>
             
-            <div className={`grid ${gridCols} gap-2 mx-4 flex-1 h-[calc(100vh-280px)] relative grid`}>
+            <div className={`grid ${gridCols} gap-1 sm:gap-2 mx-2 sm:mx-4 flex-1 overflow-y-auto relative grid`} style={{ maxHeight: 'calc(100vh - 280px)' }}>
 {numbers.map((number) => (
 <motion.div
   key={number}
   onClick={() => toggleNumber(number)}
 className={`
   relative flex items-center justify-center 
-  rounded-xl cursor-pointer text-5xl font-black
+  rounded-xl cursor-pointer font-black
+  min-h-[3.5rem] sm:min-h-[4rem] md:min-h-[4.5rem] lg:min-h-[5rem] xl:min-h-[6rem]
+  text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl
   ${
     chaseNumbers.has(number)
       ? !isLocked && unlockSelections.has(number)
@@ -2529,15 +2531,20 @@ ${!isLocked && unlockSelections.has(number)
   whileHover={{ scale: 1.05 }}
   whileTap={{ scale: 0.95 }}
 >
-  {!selectedNumbers.has(number) && number}
+  {/* Always show the number as background */}
+  <span className={`${selectedNumbers.has(number) ? 'opacity-0' : 'opacity-100'} z-10`}>
+    {number}
+  </span>
+  
+  {/* Show X marks over the number when selected */}
   {(selectedNumbers.has(number)) && (
     <motion.div
-      className="absolute inset-0 flex items-center justify-center overflow-hidden"
+      className="absolute inset-0 flex items-center justify-center z-20"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
     >
-      <div className={`w-full h-0.5 ${useStoneStyle ? 'bg-gray-400' : 'bg-gray-800'} transform rotate-45`} />
-      <div className={`w-full h-0.5 ${useStoneStyle ? 'bg-gray-400' : 'bg-gray-800'} transform -rotate-45 absolute`} />
+      <div className={`w-[70%] h-1 sm:h-1.5 md:h-2 lg:h-2.5 xl:h-3 ${useStoneStyle ? 'bg-gray-400' : 'bg-gray-800'} transform rotate-45`} />
+      <div className={`w-[70%] h-1 sm:h-1.5 md:h-2 lg:h-2.5 xl:h-3 ${useStoneStyle ? 'bg-gray-400' : 'bg-gray-800'} transform -rotate-45 absolute`} />
     </motion.div>
   )}
   {!selectedNumbers.has(number) && shimmerLevel > 0 && (
@@ -2620,21 +2627,21 @@ ${!isLocked && unlockSelections.has(number)
 )}
             </div>
 
-            <div className="flex items-center gap-4 mx-4 mt-2 text-2xl font-bold">
+            <div className="flex items-center gap-2 sm:gap-4 mx-2 sm:mx-4 mt-2 text-lg sm:text-xl md:text-2xl font-bold">
               {/* Left side - Queue controls */}
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 sm:gap-2">
                 {/* Plus button */}
                 <motion.button
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
                   onClick={() => handleQueueChange(1)}
-                  className="w-12 h-12 bg-transparent hover:bg-white/10 text-white rounded-lg flex items-center justify-center text-2xl font-bold transition-colors border border-white/30"
+                  className="w-10 h-10 sm:w-12 sm:h-12 bg-transparent hover:bg-white/10 text-white rounded-lg flex items-center justify-center text-xl sm:text-2xl font-bold transition-colors border border-white/30"
                 >
                   +
                 </motion.button>
 
                 {/* Queue count display */}
-                <div className="px-6 py-3 rounded-xl text-gray-500 text-2xl">
+                <div className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 rounded-xl text-gray-500 text-lg sm:text-xl md:text-2xl">
                   Q{queueCount}
                 </div>
                 
@@ -2643,19 +2650,21 @@ ${!isLocked && unlockSelections.has(number)
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
                   onClick={() => handleQueueChange(-1)}
-                  className="w-12 h-12 bg-transparent hover:bg-white/10 text-white rounded-lg flex items-center justify-center text-2xl font-bold transition-colors border border-white/30"
+                  className="w-10 h-10 sm:w-12 sm:h-12 bg-transparent hover:bg-white/10 text-white rounded-lg flex items-center justify-center text-xl sm:text-2xl font-bold transition-colors border border-white/30"
                 >
                   -
                 </motion.button>
               </div>
               
-              {/* Centered - Single white fun bar */}
+              {/* Centered - Dynamic responsive info bar */}
               <div className="flex-1 flex justify-center">
-                <div className="px-8 py-4 rounded-xl bg-white flex items-center" style={{ fontSize: '2.67rem' }}>
-                  <span className="text-red-500 font-bold">{remainingChases} Chases</span>
-                  <span className="text-black font-bold"> / </span>
-                  <span className="text-black font-bold">{bagCount - selectedNumbers.size - queueCount} Bags/</span>
-                  <span className="text-blue-500 font-bold"> (Hit R: {calculateHitRatio()})</span>
+                <div className="px-2 sm:px-4 md:px-6 lg:px-8 py-2 sm:py-3 md:py-4 rounded-xl bg-white flex flex-wrap items-center justify-center gap-1 sm:gap-2 text-sm sm:text-lg md:text-xl lg:text-2xl xl:text-3xl">
+                  <span className="text-red-500 font-bold whitespace-nowrap">{remainingChases} Chases</span>
+                  <span className="text-black font-bold hidden sm:inline"> / </span>
+                  <span className="text-black font-bold whitespace-nowrap">{bagCount - selectedNumbers.size - queueCount} Bags</span>
+                  <span className="text-blue-500 font-bold whitespace-nowrap hidden md:inline"> (Hit R: {calculateHitRatio()})</span>
+                  {/* Show hit ratio on smaller screens in a more compact way */}
+                  <span className="text-blue-500 font-bold whitespace-nowrap md:hidden text-xs sm:text-sm"> {calculateHitRatio()}</span>
                 </div>
               </div>
             </div>
