@@ -4,6 +4,21 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch'
 import { useState, useEffect, useRef, useCallback } from 'react'
+
+// Add CSS for flashing border animation
+const flashingBorderStyles = `
+  @keyframes flashBorder {
+    0% { border-color: black; }
+    100% { border-color: white; }
+  }
+`;
+
+// Inject the styles into the document head
+if (typeof document !== 'undefined') {
+  const styleSheet = document.createElement('style');
+  styleSheet.textContent = flashingBorderStyles;
+  document.head.appendChild(styleSheet);
+}
 const IMAGE_STORAGE_KEY = 'storedImages';
 const MAX_STORAGE_SIZE = 4.5 * 1024 * 1024; // 4.5MB to be safe under 5MB limit
 
@@ -712,6 +727,11 @@ const [shimmerLevel, setShimmerLevel] = useState(0) // 0 = off, 1-3 = shine leve
   const [dragonairShamrocks, setDragonairShamrocks] = useState([]);
   const [fontSizeLevel, setFontSizeLevel] = useState(2); // 0-4, where 2 is default
   const [statsFontSizeLevel, setStatsFontSizeLevel] = useState(1); // 0-3, where 1 is default (current size)
+  
+  // Last clicked box flashing state
+  const [lastClickedBox, setLastClickedBox] = useState(null);
+  const [isFlashing, setIsFlashing] = useState(false);
+  const flashTimeoutRef = useRef(null);
 
   // Dragonair circle images array for cycling
   const dragonairCircleImages = [
@@ -1294,6 +1314,21 @@ const handleBagCountChange = (increment) => {
 
   setSelectedNumbers(newSelected);
   setChaseNumbers(newChases);
+  
+  // Set up flashing for the last clicked box
+  setLastClickedBox(number);
+  setIsFlashing(true);
+  
+  // Clear any existing timeout
+  if (flashTimeoutRef.current) {
+    clearTimeout(flashTimeoutRef.current);
+  }
+  
+  // Stop flashing after 5 seconds
+  flashTimeoutRef.current = setTimeout(() => {
+    setIsFlashing(false);
+    setLastClickedBox(null);
+  }, 5000);
 };
 
   const calculateHitRatio = () => {
@@ -2062,6 +2097,9 @@ useEffect(() => {
       if (dragonairIntervalRef.current) {
         clearInterval(dragonairIntervalRef.current)
       }
+      if (flashTimeoutRef.current) {
+        clearTimeout(flashTimeoutRef.current)
+      }
     }
   }, [])
 
@@ -2507,7 +2545,16 @@ className={`
       : 'bg-white text-gray-800 hover:bg-gray-100'
   }
   shadow-md transition-all duration-300
+  ${lastClickedBox === number && isFlashing ? 'animate-pulse' : ''}
 `}
+  style={{
+    border: lastClickedBox === number && isFlashing 
+      ? '4px solid transparent'
+      : undefined,
+    animation: lastClickedBox === number && isFlashing 
+      ? 'flashBorder 0.5s infinite alternate'
+      : undefined
+  }}
   whileHover={{ scale: 1.05 }}
   whileTap={{ scale: 0.95 }}
 >
