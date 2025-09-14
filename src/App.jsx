@@ -2285,7 +2285,7 @@ useEffect(() => {
 <div className="flex items-center justify-center gap-4 mb-2">
 
 
-  <motion.div
+  {/* <motion.div
     whileHover={{ scale: 1.1 }}
     whileTap={{ scale: 0.9 }}
     onClick={() => setCurrentView('vintage')}
@@ -2297,8 +2297,8 @@ useEffect(() => {
     className="w-20 h-20 object-contain animate-pulse"
     style={{ animationDuration: '3s' }}
   />
-</motion.div>
-              <div className="text-center">
+</motion.div> */}
+              {/* <div className="text-center">
     <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black mb-1" style={{
       fontFamily: 'Comic Sans MS, cursive, sans-serif',
       color: '#10b981',
@@ -2313,8 +2313,8 @@ useEffect(() => {
     }}>
       Mystery Box Pull
     </h2>
-  </div>
-  <motion.div
+  </div> */}
+  {/* <motion.div
     whileHover={{ scale: 1.1 }}
     whileTap={{ scale: 0.9 }}
     onClick={() => {
@@ -2336,10 +2336,10 @@ useEffect(() => {
     <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
       <span className="text-2xl font-bold text-white">%</span>
     </div>
-  </motion.div>
+  </motion.div> */}
 </div>
 {/* Add the AnimatePresence right here */}
-<AnimatePresence>
+{/* <AnimatePresence>
   {showProbCalc && (
     <ProbabilityCalculator
   isOpen={showProbCalc}
@@ -2348,7 +2348,7 @@ useEffect(() => {
   totalChases={remainingChases}  // Using remaining chases instead of total chases
 />
   )}
-</AnimatePresence>
+</AnimatePresence> */}
             <AnimatePresence mode="wait">
               {isEditMode && (
   <motion.div
