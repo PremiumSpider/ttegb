@@ -715,6 +715,7 @@ const [shimmerLevel, setShimmerLevel] = useState(0) // 0 = off, 1-3 = shine leve
   const [dragonairShamrocks, setDragonairShamrocks] = useState([]);
   const [lockFlash, setLockFlash] = useState(false);
   const [fontSizeLevel, setFontSizeLevel] = useState(2); // 0-4, where 2 is default
+  const [statsFontSizeLevel, setStatsFontSizeLevel] = useState(1); // 0-3, where 1 is default (current size)
 
   // Dragonair circle images array for cycling
   const dragonairCircleImages = [
@@ -1293,6 +1294,11 @@ const handleBagCountChange = (increment) => {
     setFontSizeLevel(prev => Math.max(0, Math.min(8, prev + increment)))
   }
 
+  // Stats font size control handlers
+  const handleStatsFontSizeChange = (increment) => {
+    setStatsFontSizeLevel(prev => Math.max(0, Math.min(3, prev + increment)))
+  }
+
   // Get font size class based on level (0-8, where 2 is default)
   const getFontSizeClass = () => {
     const fontSizes = [
@@ -1307,6 +1313,17 @@ const handleBagCountChange = (increment) => {
       'text-6xl sm:text-7xl md:text-8xl lg:text-9xl xl:text-10xl'    // Level 8 - massive
     ]
     return fontSizes[fontSizeLevel]
+  }
+
+  // Get stats font size class based on level (0-3, where 1 is default/current)
+  const getStatsFontSizeClass = () => {
+    const statsFontSizes = [
+      'text-sm sm:text-base md:text-lg lg:text-xl xl:text-2xl',      // Level 0 - smallest
+      'text-base sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl',    // Level 1 - default (current size)
+      'text-lg sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl',     // Level 2 - larger
+      'text-xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl'      // Level 3 - largest
+    ]
+    return statsFontSizes[statsFontSizeLevel]
   }
   
 
@@ -2506,6 +2523,35 @@ useEffect(() => {
         >
           +T
         </motion.button>
+
+        {/* Stats Font Size Controls */}
+        <motion.button
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          onClick={() => handleStatsFontSizeChange(-1)}
+          disabled={statsFontSizeLevel === 0}
+          className={`w-14 h-8 rounded-lg flex items-center justify-center text-sm font-bold transition-colors border ${
+            statsFontSizeLevel === 0 
+              ? 'bg-gray-600/50 text-gray-400 border-gray-500/30 cursor-not-allowed' 
+              : 'bg-blue-600/80 hover:bg-blue-500/80 text-white border-blue-500/50'
+          }`}
+        >
+          -TL
+        </motion.button>
+        
+        <motion.button
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          onClick={() => handleStatsFontSizeChange(1)}
+          disabled={statsFontSizeLevel === 3}
+          className={`w-14 h-8 rounded-lg flex items-center justify-center text-sm font-bold transition-colors border ${
+            statsFontSizeLevel === 3 
+              ? 'bg-gray-600/50 text-gray-400 border-gray-500/30 cursor-not-allowed' 
+              : 'bg-blue-600/80 hover:bg-blue-500/80 text-white border-blue-500/50'
+          }`}
+        >
+          +TL
+        </motion.button>
       </div>
     </div>
   </motion.div>
@@ -2686,7 +2732,7 @@ ${!isLocked && unlockSelections.has(number)
               
               {/* Centered - Dynamic responsive info bar - smaller */}
               <div className="flex-1 flex justify-center">
-                <div className="px-2 sm:px-3 md:px-4 lg:px-6 py-1 sm:py-2 md:py-3 rounded-xl bg-white flex flex-wrap items-center justify-center gap-1 sm:gap-2 text-base sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl">
+                <div className={`px-2 sm:px-3 md:px-4 lg:px-6 py-1 sm:py-2 md:py-3 rounded-xl bg-white flex flex-wrap items-center justify-center gap-1 sm:gap-2 ${getStatsFontSizeClass()}`}>
                   <span className="text-red-500 font-bold whitespace-nowrap">{remainingChases} Chases</span>
                   <span className="text-black font-bold hidden sm:inline"> / </span>
                   <span className="text-black font-bold whitespace-nowrap">{bagCount - selectedNumbers.size - queueCount} Bags</span>
