@@ -2411,10 +2411,9 @@ ${!isLocked && (unlockSelections.has(number) || chaseNumbers.has(number))
 )}
             </div>
 
-            <div className="flex flex-wrap justify-center items-center gap-4 mx-4 mt-2 text-2xl font-bold">
+            <div className="flex items-center gap-4 mx-4 mt-2 text-2xl font-bold">
+              {/* Left side - Queue controls */}
               <div className="flex items-center gap-2">
-                
-                
                 {/* Plus button */}
                 <motion.button
                   whileHover={{ scale: 1.1 }}
@@ -2439,18 +2438,16 @@ ${!isLocked && (unlockSelections.has(number) || chaseNumbers.has(number))
                 >
                   -
                 </motion.button>
-                
-                {/* Bags Left display */}
-                <div className="px-6 py-3 rounded-xl bg-white text-gray-800 text-2xl">
-                  Bags: {bagCount - selectedNumbers.size - queueCount} / {bagCount}
-                </div>
               </div>
               
-              <div className="px-6 py-3 rounded-xl bg-gradient-to-r from-red-500 via-red-600 to-red-700 text-white text-2xl">
-                Chases: {remainingChases}
-              </div>
-              <div className="px-6 py-3 rounded-xl bg-gradient-to-r from-cyan-500/80 to-blue-600/80 text-white text-2xl">
-                Hit R: {calculateHitRatio()}
+              {/* Centered - Single white fun bar */}
+              <div className="flex-1 flex justify-center">
+                <div className="px-8 py-4 rounded-xl bg-white flex items-center" style={{ fontSize: '2.67rem' }}>
+                  <span className="text-red-500 font-bold">{remainingChases} Chases</span>
+                  <span className="text-black font-bold"> / </span>
+                  <span className="text-black font-bold">{bagCount - selectedNumbers.size - queueCount} Bags/</span>
+                  <span className="text-blue-500 font-bold"> (Hit R: {calculateHitRatio()})</span>
+                </div>
               </div>
             </div>
 
