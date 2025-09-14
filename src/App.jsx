@@ -2205,17 +2205,17 @@ useEffect(() => {
   />
 </motion.div>
   <div className="text-center">
-    <h1 className="text-4xl font-black mb-1" style={{
+    <h1 className="text-6xl font-black mb-1" style={{
       fontFamily: 'Comic Sans MS, cursive, sans-serif',
       color: '#10b981',
-      textShadow: '3px 3px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000'
+      textShadow: '4px 4px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000'
     }}>
       Lucky Packs
     </h1>
-    <h2 className="text-2xl font-bold" style={{
+    <h2 className="text-4xl font-bold" style={{
       fontFamily: 'Comic Sans MS, cursive, sans-serif',
       color: '#059669',
-      textShadow: '2px 2px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000'
+      textShadow: '3px 3px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000'
     }}>
       Mystery Box Pull
     </h2>
