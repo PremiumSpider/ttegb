@@ -713,6 +713,7 @@ const [shimmerLevel, setShimmerLevel] = useState(1) // 0 = off, 1-3 = shine leve
   const [dragonairCircleActive, setDragonairCircleActive] = useState(false);
   const [currentDragonairImageIndex, setCurrentDragonairImageIndex] = useState(0);
   const [dragonairShamrocks, setDragonairShamrocks] = useState([]);
+  const [lockFlash, setLockFlash] = useState(false);
 
   // Dragonair circle images array for cycling
   const dragonairCircleImages = [
@@ -1284,7 +1285,12 @@ const handleBagCountChange = (increment) => {
   
 
  const toggleNumber = (number) => {
-  if (isLocked) return;
+  if (isLocked) {
+    // Trigger lock flash effect when clicking on locked boxes
+    setLockFlash(true);
+    setTimeout(() => setLockFlash(false), 300); // Flash for 300ms
+    return;
+  }
 
   const newSelected = new Set(selectedNumbers);
   const newChases = new Set(chaseNumbers);
@@ -2591,9 +2597,18 @@ ${!isLocked && (unlockSelections.has(number) || chaseNumbers.has(number))
     exit={{ opacity: 0, scale: 0.5 }}
     className="absolute inset-0 flex items-center justify-center pointer-events-none z-10"
   >
-    <div className="text-[10rem] opacity-15 text-white drop-shadow-2xl">
+    <motion.div 
+      className="text-[10rem] text-white drop-shadow-2xl"
+      animate={{ 
+        opacity: lockFlash ? 1.0 : 0.15 
+      }}
+      transition={{ 
+        duration: lockFlash ? 0.1 : 0.3,
+        ease: "easeOut"
+      }}
+    >
       🔒
-    </div>
+    </motion.div>
   </motion.div>
 )}
             </div>
