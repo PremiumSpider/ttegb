@@ -1297,7 +1297,7 @@ const handleBagCountChange = (increment) => {
   const newUnlockSelections = new Set(unlockSelections);
 
   if (!newSelected.has(number)) {
-    // Adding a new number - always mark the box
+    // Adding a new number - always mark the box and add to unlock selections for flashing
     newSelected.add(number);
     newUnlockSelections.add(number);
     
@@ -1306,11 +1306,10 @@ const handleBagCountChange = (increment) => {
       setQueueCount(prev => prev - 1);
     }
   } else if (!newChases.has(number)) {
-    // Converting to chase
+    // Converting to chase - add to unlock selections for flashing
     newChases.add(number);
     setRemainingChases(prev => prev - 1);
-    // Remove rainbow border when converting to chase
-    newUnlockSelections.delete(number);
+    newUnlockSelections.add(number); // Keep flashing when converting to chase
   } else {
     // Deselecting completely - add back to queue when unmarking
     newSelected.delete(number);
@@ -2314,8 +2313,11 @@ useEffect(() => {
   isLocked={isLocked} 
   onToggle={() => {
     if (!isLocked) {
+      // When locking: clear all unlock selections to stop flashing
       setUnlockSelections(new Set());
     } else {
+      // When unlocking: clear previous unlock selections and increment animation key
+      setUnlockSelections(new Set());
       setAnimationKey(prev => prev + 1);
     }
     setIsLocked(!isLocked);
@@ -2498,7 +2500,7 @@ className={`
   rounded-xl cursor-pointer text-5xl font-black
   ${
     chaseNumbers.has(number)
-      ? !isLocked
+      ? !isLocked && unlockSelections.has(number)
         ? 'bg-gradient-to-r from-red-500 via-red-600 to-red-700 text-white animate-flash'
         : 'bg-gradient-to-r from-red-500 via-red-600 to-red-700 text-white'
       : selectedNumbers.has(number)
@@ -2509,7 +2511,7 @@ className={`
       ? 'animate-flash text-white'
       : 'bg-white text-gray-800 hover:bg-gray-100'
   }
-${!isLocked && (unlockSelections.has(number) || chaseNumbers.has(number))
+${!isLocked && unlockSelections.has(number)
   ? 'border-[3px] animate-rainbow-border' 
   : 'shadow-md'
 }
