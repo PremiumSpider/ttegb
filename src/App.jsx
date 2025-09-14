@@ -2405,9 +2405,9 @@ useEffect(() => {
     initial={{ opacity: 0, y: -20 }}
     animate={{ opacity: 1, y: 0 }}
     exit={{ opacity: 0, y: -20 }}
-    className="flex flex-wrap items-center justify-between gap-4 mx-4 mb-2 bg-black/20 backdrop-blur-sm p-4 rounded-xl"
+    className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center sm:justify-between gap-4 mx-4 mb-2 bg-black/20 backdrop-blur-sm p-4 rounded-xl"
   >
-    <div className="flex items-center gap-4">
+    <div className="flex flex-col sm:flex-row sm:items-center gap-4">
       <div className="flex items-center gap-2">
         <span className="text-base font-medium text-black">Total Bags:</span>
         <div className="flex items-center gap-2">
@@ -2449,34 +2449,25 @@ useEffect(() => {
           </button>
         </div>
       </div>
-{/* <button
-  onClick={() => setShimmerLevel((prev) => (prev + 1) % 4)} // Cycle through 0-3
-  className={`px-4 py-2 text-green rounded-lg transition-colors ${
-    shimmerLevel > 0
-      ? `bg-blue-500/${shimmerLevel * 25} hover:bg-blue-600/${shimmerLevel * 25} ring-2 ring-blue-400`
-      : 'bg-blue-500/30 hover:bg-blue-500/40'
-  }`}
->
-  {shimmerLevel === 0 ? 'Shine Off' : `Shine ${shimmerLevel}`}
-</button> */}
+    </div>
 
-
+    <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
       <button
         onClick={() => setShowResetConfirm(true)}
         className="px-4 py-2 bg-gradient-to-r from-red-500 to-pink-600 text-white rounded-lg hover:shadow-lg transition-colors text-base font-medium"
       >
         Reset
       </button>
-        <button
-    onClick={() => setUseStoneStyle(!useStoneStyle)}
-    className={`px-3 py-1 text-white rounded-lg transition-colors text-sm ${
-      useStoneStyle 
-        ? 'bg-slate-600 hover:bg-slate-700' 
-        : 'bg-purple-600 hover:bg-purple-700'
-    }`}
-  >
-    {useStoneStyle ? 'Stone' : 'White'}
-  </button>
+      <button
+        onClick={() => setUseStoneStyle(!useStoneStyle)}
+        className={`px-3 py-1 text-white rounded-lg transition-colors text-sm ${
+          useStoneStyle 
+            ? 'bg-slate-600 hover:bg-slate-700' 
+            : 'bg-purple-600 hover:bg-purple-700'
+        }`}
+      >
+        {useStoneStyle ? 'Stone' : 'White'}
+      </button>
     </div>
   </motion.div>
 )}
@@ -2717,7 +2708,7 @@ ${!isLocked && unlockSelections.has(number)
                       </p>
                     </motion.div>
                     
-                    <div className="flex gap-3 justify-center">
+                    <div className="flex flex-col sm:flex-row gap-3 justify-center">
                       <motion.button
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
