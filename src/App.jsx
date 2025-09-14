@@ -2181,6 +2181,8 @@ if (savedState) {
   setUseStoneStyle(parsedState.useStoneStyle || false)
   setShimmerLevel(parsedState.shimmerLevel !== undefined ? parsedState.shimmerLevel : 0)
   setCurrentTargetIndex(parsedState.currentTargetIndex || 0)
+  setFontSizeLevel(parsedState.fontSizeLevel !== undefined ? parsedState.fontSizeLevel : 2)
+  setStatsFontSizeLevel(parsedState.statsFontSizeLevel !== undefined ? parsedState.statsFontSizeLevel : 1)
 } else {
   setBagCount(50)
   setChaseCount(8)
@@ -2232,13 +2234,15 @@ useEffect(() => {
       markSize,
       useStoneStyle,
       shimmerLevel,
-      currentTargetIndex // Add this
+      currentTargetIndex,
+      fontSizeLevel,
+      statsFontSizeLevel
     }
     localStorage.setItem('gachaBagState', JSON.stringify(stateToSave))
   } catch (error) {
     console.error('Error saving state:', error)
   }
-}, [bagCount, chaseCount, selectedNumbers, chaseNumbers, remainingChases, marks, markSize, isLoading, useStoneStyle, shimmerLevel, currentTargetIndex])
+}, [bagCount, chaseCount, selectedNumbers, chaseNumbers, remainingChases, marks, markSize, isLoading, useStoneStyle, shimmerLevel, currentTargetIndex, fontSizeLevel, statsFontSizeLevel])
   
 
 useEffect(() => {
