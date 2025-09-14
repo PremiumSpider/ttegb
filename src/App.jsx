@@ -760,7 +760,7 @@ const LockButton = ({ isLocked, onToggle }) => (
     onClick={onToggle}
     whileHover={{ scale: 1.1 }}
     whileTap={{ scale: 0.9 }}
-    className={`relative w-20 h-20 rounded-full flex items-center justify-center transition-all duration-300 ${
+    className={`relative w-24 h-16 rounded-lg flex items-center justify-center transition-all duration-300 ${
       isLocked 
         ? 'bg-red-500/30 hover:bg-red-500/40' 
         : 'bg-green-500/30 hover:bg-green-500/40 animate-rainbow-border'
@@ -770,9 +770,13 @@ const LockButton = ({ isLocked, onToggle }) => (
       initial={false}
       animate={{ rotate: isLocked ? 0 : 180 }}
       transition={{ type: "spring", stiffness: 200, damping: 15 }}
-      className="text-2xl text-white"
+      className="w-8 h-8"
     >
-      {isLocked ? '🔒' : '🔓'}
+      <img 
+        src={isLocked ? '/master.png' : '/poke.png'} 
+        alt={isLocked ? 'Locked' : 'Unlocked'}
+        className="w-full h-full object-contain filter brightness-0 invert"
+      />
     </motion.div>
 <style jsx>{`
   @keyframes flash-animation {
