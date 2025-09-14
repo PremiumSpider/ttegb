@@ -660,9 +660,6 @@ function App() {
 const [showStoragePopup, setShowStoragePopup] = useState(false);
 const [storageInfo, setStorageInfo] = useState({ totalSize: 0, imageSize: 0 });
   const [animationKey, setAnimationKey] = useState(0);
-  const [flashingActive, setFlashingActive] = useState(false);
-  const [isLocked, setIsLocked] = useState(true);
-  const [unlockSelections, setUnlockSelections] = useState(new Set());
   const [showProbCalc, setShowProbCalc] = useState(false);
   const [currentView, setCurrentView] = useState('bags')
   const [insuranceImages, setInsuranceImages] = useState([null, null, null, null, null])
@@ -713,7 +710,6 @@ const [shimmerLevel, setShimmerLevel] = useState(0) // 0 = off, 1-3 = shine leve
   const [dragonairCircleActive, setDragonairCircleActive] = useState(false);
   const [currentDragonairImageIndex, setCurrentDragonairImageIndex] = useState(0);
   const [dragonairShamrocks, setDragonairShamrocks] = useState([]);
-  const [lockFlash, setLockFlash] = useState(false);
   const [fontSizeLevel, setFontSizeLevel] = useState(2); // 0-4, where 2 is default
   const [statsFontSizeLevel, setStatsFontSizeLevel] = useState(1); // 0-3, where 1 is default (current size)
 
@@ -757,62 +753,6 @@ const [hasImages, setHasImages] = useState(false);
 ];
 const [currentTargetIndex, setCurrentTargetIndex] = useState(0);
 
-const LockButton = ({ isLocked, onToggle }) => (
-  <motion.button
-    onClick={onToggle}
-    whileHover={{ scale: 1.1 }}
-    whileTap={{ scale: 0.9 }}
-    className={`relative w-24 h-16 rounded-lg flex items-center justify-center transition-all duration-300 ${
-      isLocked 
-        ? 'bg-red-500/30 hover:bg-red-500/40' 
-        : 'bg-green-500/30 hover:bg-green-500/40 animate-rainbow-border'
-    }`}
-  >
-    <motion.div
-      initial={false}
-      animate={{ rotate: isLocked ? 0 : 180 }}
-      transition={{ type: "spring", stiffness: 200, damping: 15 }}
-      className="w-8 h-8"
-    >
-      <img 
-        src={isLocked ? '/master.png' : '/poke.png'} 
-        alt={isLocked ? 'Locked' : 'Unlocked'}
-        className="w-full h-full object-contain filter brightness-0 invert"
-      />
-    </motion.div>
-<style jsx>{`
-  @keyframes flash-animation {
-    0%, 100% { 
-      background: rgba(255, 255, 255, 0.3);
-    }
-    50% { 
-      background: rgba(0, 0, 0, 0.3);
-    }
-  }
-  @keyframes rainbow-border {
-    0% { 
-      border-color: rgba(255, 255, 255, 0.9);
-      box-shadow: 0 0 10px rgba(255, 255, 255, 0.7);
-    }
-    50% { 
-      border-color: rgba(0, 0, 0, 0.9);
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.7);
-    }
-    100% { 
-      border-color: rgba(255, 255, 255, 0.9);
-      box-shadow: 0 0 10px rgba(255, 255, 255, 0.7);
-    }
-  }
-  .animate-flash {
-    animation: flash-animation 1s linear infinite;
-  }
-  .animate-rainbow-border {
-    animation: rainbow-border 1s linear infinite;
-  }
-`}</style>
-
-  </motion.button>
-);
 
 const ProbabilityCalculator = ({ isOpen, onClose, totalBags, totalChases }) => {
   const [bagsDrawn, setBagsDrawn] = useState(3);
@@ -1328,31 +1268,21 @@ const handleBagCountChange = (increment) => {
   
 
  const toggleNumber = (number) => {
-  if (isLocked) {
-    // Trigger lock flash effect when clicking on locked boxes
-    setLockFlash(true);
-    setTimeout(() => setLockFlash(false), 300); // Flash for 300ms
-    return;
-  }
-
   const newSelected = new Set(selectedNumbers);
   const newChases = new Set(chaseNumbers);
-  const newUnlockSelections = new Set(unlockSelections);
 
   if (!newSelected.has(number)) {
-    // Adding a new number - always mark the box and add to unlock selections for flashing
+    // Adding a new number - always mark the box
     newSelected.add(number);
-    newUnlockSelections.add(number);
     
     // If there's a queue, subtract from it (but still mark the box)
     if (queueCount > 0) {
       setQueueCount(prev => prev - 1);
     }
   } else if (!newChases.has(number)) {
-    // Converting to chase - add to unlock selections for flashing
+    // Converting to chase
     newChases.add(number);
     setRemainingChases(prev => prev - 1);
-    newUnlockSelections.add(number); // Keep flashing when converting to chase
   } else {
     // Deselecting completely - add back to queue when unmarking
     newSelected.delete(number);
@@ -1360,13 +1290,10 @@ const handleBagCountChange = (increment) => {
     setRemainingChases(prev => prev + 1);
     // Add back to queue when unmarking
     setQueueCount(prev => prev + 1);
-    // Remove from unlockSelections when deselecting
-    newUnlockSelections.delete(number);
   }
 
   setSelectedNumbers(newSelected);
   setChaseNumbers(newChases);
-  setUnlockSelections(newUnlockSelections);
 };
 
   const calculateHitRatio = () => {
@@ -2017,7 +1944,6 @@ const handleReset = () => {
     setCurrentBountyIndex(0)
     setVintageImages([null, null, null])
     setCurrentImageIndex(0)
-    setIsLocked(true)
     setQueueCount(0)
     setShimmerLevel(0)
   } catch (error) {
@@ -2357,20 +2283,6 @@ useEffect(() => {
   </button>
 </div>
 <div className="flex items-center justify-center gap-4 mb-2">
-<LockButton 
-  isLocked={isLocked} 
-  onToggle={() => {
-    if (!isLocked) {
-      // When locking: clear all unlock selections to stop flashing
-      setUnlockSelections(new Set());
-    } else {
-      // When unlocking: clear previous unlock selections and increment animation key
-      setUnlockSelections(new Set());
-      setAnimationKey(prev => prev + 1);
-    }
-    setIsLocked(!isLocked);
-  }} 
-/>
 
 
   <motion.div
@@ -2587,27 +2499,15 @@ className={`
   ${getFontSizeClass()}
   ${
     chaseNumbers.has(number)
-      ? !isLocked && unlockSelections.has(number)
-        ? 'bg-gradient-to-r from-red-500 via-red-600 to-red-700 text-white animate-flash'
-        : 'bg-gradient-to-r from-red-500 via-red-600 to-red-700 text-white'
+      ? 'bg-gradient-to-r from-red-500 via-red-600 to-red-700 text-white'
       : selectedNumbers.has(number)
       ? useStoneStyle
         ? 'bg-gradient-to-br from-slate-600 to-slate-800 text-gray-300'
         : 'bg-white text-gray-800'
-      : !isLocked && unlockSelections.has(number)
-      ? 'animate-flash text-white'
       : 'bg-white text-gray-800 hover:bg-gray-100'
   }
-${!isLocked && unlockSelections.has(number)
-  ? 'border-[3px] animate-rainbow-border' 
-  : 'shadow-md'
-}
-  transition-all duration-300
+  shadow-md transition-all duration-300
 `}
-  style={{
-    '--flash-animation-name': `flash${animationKey}`,
-    '--border-animation-name': `rainbow${animationKey}`
-  }}
   whileHover={{ scale: 1.05 }}
   whileTap={{ scale: 0.95 }}
 >
@@ -2683,28 +2583,6 @@ ${!isLocked && unlockSelections.has(number)
   ))}
 </AnimatePresence>
 
-{/* Big transparent lock overlay when locked */}
-{isLocked && (
-  <motion.div
-    initial={{ opacity: 0, scale: 0.5 }}
-    animate={{ opacity: 1, scale: 1 }}
-    exit={{ opacity: 0, scale: 0.5 }}
-    className="absolute inset-0 flex items-center justify-center pointer-events-none z-10"
-  >
-    <motion.div 
-      className="text-[10rem] text-white drop-shadow-2xl"
-      animate={{ 
-        opacity: lockFlash ? 1.0 : 0.15 
-      }}
-      transition={{ 
-        duration: lockFlash ? 0.1 : 0.3,
-        ease: "easeOut"
-      }}
-    >
-      🔒
-    </motion.div>
-  </motion.div>
-)}
             </div>
 
             <div className="flex items-center gap-2 sm:gap-4 mx-2 sm:mx-4 mt-2 text-lg sm:text-xl md:text-2xl font-bold">
