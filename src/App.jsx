@@ -720,7 +720,9 @@ const [shimmerLevel, setShimmerLevel] = useState(1) // 0 = off, 1-3 = shine leve
     '/coinshrock.webp',
     '/pinkshrock.webp',
     '/rshrock.webp',
-    '/shinyshrock.webp'
+    '/shinyshrock.webp',
+    '/chibydragonite.webp',
+    '/frontaldragonite.webp'
   ];
 const [bounties, setBounties] = useState([])
 const [currentBountyIndex, setCurrentBountyIndex] = useState(0)
@@ -2351,7 +2353,14 @@ useEffect(() => {
   <motion.div
     whileHover={{ scale: 1.1 }}
     whileTap={{ scale: 0.9 }}
-    onClick={() => setShowProbCalc(true)}
+    onClick={() => {
+      // Turn off Dragonair feature to prevent flickering
+      if (dragonairCircleActive) {
+        setDragonairCircleActive(false);
+        stopDragonairShamrockSystem();
+      }
+      setShowProbCalc(true);
+    }}
     className="w-20 h-20 cursor-pointer relative group"
   >
     <img 
