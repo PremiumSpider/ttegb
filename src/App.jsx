@@ -1222,9 +1222,22 @@ const handleBagCountChange = (increment) => {
 
   const handleChaseCountChange = (increment) => {
     const newCount = Math.max(0, Math.min(100, chaseCount + increment))
-    setChaseCount(newCount)
-    setRemainingChases(newCount)
-    setChaseNumbers(new Set())
+    const currentRedBoxes = chaseNumbers.size
+    
+    // If reducing chases, check if new count would be below current red marked boxes
+    if (increment < 0) {
+      if (newCount < currentRedBoxes) {
+        alert(`Cannot reduce chases below ${currentRedBoxes}: You have ${currentRedBoxes} red marked boxes`)
+        return
+      }
+      // When reducing chases, don't clear red boxes - just update counts
+      setChaseCount(newCount)
+      setRemainingChases(newCount - currentRedBoxes) // Adjust remaining chases
+    } else {
+      // When increasing chases, keep red boxes and just add to remaining chases
+      setChaseCount(newCount)
+      setRemainingChases(newCount - currentRedBoxes) // Keep existing red boxes, add to remaining
+    }
     setIsCooked(false)
   }
 
