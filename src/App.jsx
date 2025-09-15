@@ -1399,27 +1399,36 @@ const handleBagCountChange = (increment) => {
 
   // Function to safely open probability calculator with animation cleanup
   const openProbabilityCalculator = () => {
-    // Show loading popup
-    setIsLoadingProbCalc(true);
+    // 1. Check if dragonair was active or if there's a box flashing to determine if we need to wait
+    const needsWait = dragonairCircleActive || isFlashing;
     
-    // 1. Turn off Dragonair animations if they are on
+    // Show loading popup only if we need to wait
+    if (needsWait) {
+      setIsLoadingProbCalc(true);
+    }
+    
+    // 2. Turn off Dragonair animations if they are on
     if (dragonairCircleActive) {
       setDragonairCircleActive(false);
       stopDragonairShamrockSystem();
     }
     
-    // 2. Suppress box flashing before opening probability calculator
+    // 3. Suppress box flashing before opening probability calculator
     if (flashTimeoutRef.current) {
       clearTimeout(flashTimeoutRef.current);
     }
     setIsFlashing(false);
     setLastClickedBox(null);
     
-    // 3. Wait for animations to finish (around 2 seconds) before opening
-    setTimeout(() => {
-      setIsLoadingProbCalc(false);
+    // 4. Wait for animations to finish only if dragonair was active or box was flashing, otherwise open immediately
+    if (needsWait) {
+      setTimeout(() => {
+        setIsLoadingProbCalc(false);
+        setShowProbCalc(true);
+      }, 2500);
+    } else {
       setShowProbCalc(true);
-    }, 2500);
+    }
   }
 // For prize images
 const handlePrizeImageUpload = async (e) => {
