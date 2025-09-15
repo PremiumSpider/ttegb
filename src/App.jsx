@@ -705,6 +705,8 @@ const [storageInfo, setStorageInfo] = useState({ totalSize: 0, imageSize: 0 });
 const [shimmerLevel, setShimmerLevel] = useState(0) // 0 = off, 1-3 = shine levels
   const [showMinusPopup, setShowMinusPopup] = useState(false);
   const [showPlusPopup, setShowPlusPopup] = useState(false);
+  const [showChaseMinusPopup, setShowChaseMinusPopup] = useState(false);
+  const [showChasePlusPopup, setShowChasePlusPopup] = useState(false);
   const [queueCount, setQueueCount] = useState(0);
   const [showQueueMinusPopup, setShowQueueMinusPopup] = useState(false);
   const [showQueuePlusPopup, setShowQueuePlusPopup] = useState(false);
@@ -2878,8 +2880,8 @@ className={`
       whileTap={{ scale: 0.9 }}
       onClick={() => {
         handleChaseCountChange(1);
-        setShowPlusPopup(true);
-        setTimeout(() => setShowPlusPopup(false), 1000);
+        setShowChasePlusPopup(true);
+        setTimeout(() => setShowChasePlusPopup(false), 1000);
       }}
       className="w-20 h-20 bg-amber-500/30 hover:bg-amber-500/40 rounded-full flex items-center justify-center text-white text-2xl font-bold shadow-lg border border-amber-400/30"
     >
@@ -2891,8 +2893,8 @@ className={`
       whileTap={{ scale: 0.9 }}
       onClick={() => {
         handleChaseCountChange(-1);
-        setShowMinusPopup(true);
-        setTimeout(() => setShowMinusPopup(false), 1000);
+        setShowChaseMinusPopup(true);
+        setTimeout(() => setShowChaseMinusPopup(false), 1000);
       }}
       className="w-20 h-20 bg-black/20 hover:bg-black/30 rounded-full flex items-center justify-center text-white text-xl font-bold shadow-lg transition-colors border border-white/20"
     >
