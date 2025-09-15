@@ -782,9 +782,13 @@ const [currentTargetIndex, setCurrentTargetIndex] = useState(0);
 const ProbabilityCalculator = ({ isOpen, onClose, totalBags, totalChases }) => {
   const [bagsDrawn, setBagsDrawn] = useState(3);
   const [chasesHit, setChasesHit] = useState(2);
+  
+  // Simulation state for Total Chases and Bags Left
+  const [simTotalChases, setSimTotalChases] = useState(totalChases);
+  const [simBagsLeft, setSimBagsLeft] = useState(totalBags);
 
   // Get the actual remaining bags from the parent component
-  const remainingBags = totalBags;
+  const remainingBags = simBagsLeft;
 
   // Prevent clicks inside modal from closing it
   const handleModalClick = (e) => {
@@ -794,7 +798,7 @@ const ProbabilityCalculator = ({ isOpen, onClose, totalBags, totalChases }) => {
   const calculateProbability = (n, k) => {
     // n = bags drawn, k = chases wanted
     const N = remainingBags; // remaining bags instead of total bags
-    const K = totalChases; // total chases
+    const K = simTotalChases; // use simulation total chases
     
     // If trying to draw more bags than available or more chases than exist
     if (n > N || k > K || n < k) return '0.00';
@@ -841,10 +845,44 @@ const ProbabilityCalculator = ({ isOpen, onClose, totalBags, totalChases }) => {
         <h2 className="text-2xl font-bold text-white mb-6">Probability Calculator</h2>
         
         <div className="space-y-6">
-          {/* Current Stats */}
+          {/* Simulation Controls */}
           <div className="bg-black/20 p-4 rounded-lg">
-            <p className="text-white">Total Chases: {totalChases}</p>
-            <p className="text-white mb-2">Bags Left: {remainingBags}</p>
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-white">Total Chases:</span>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setSimTotalChases(Math.max(0, simTotalChases - 1))}
+                  className="w-8 h-8 bg-blue-600/50 hover:bg-blue-500/50 text-white rounded flex items-center justify-center"
+                >
+                  -
+                </button>
+                <span className="text-white w-8 text-center">{simTotalChases}</span>
+                <button
+                  onClick={() => setSimTotalChases(simTotalChases + 1)}
+                  className="w-8 h-8 bg-blue-600/50 hover:bg-blue-500/50 text-white rounded flex items-center justify-center"
+                >
+                  +
+                </button>
+              </div>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-white">Bags Left:</span>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setSimBagsLeft(Math.max(1, simBagsLeft - 1))}
+                  className="w-8 h-8 bg-blue-600/50 hover:bg-blue-500/50 text-white rounded flex items-center justify-center"
+                >
+                  -
+                </button>
+                <span className="text-white w-8 text-center">{simBagsLeft}</span>
+                <button
+                  onClick={() => setSimBagsLeft(simBagsLeft + 1)}
+                  className="w-8 h-8 bg-blue-600/50 hover:bg-blue-500/50 text-white rounded flex items-center justify-center"
+                >
+                  +
+                </button>
+              </div>
+            </div>
           </div>
 
           {/* Common Scenarios */}
@@ -868,7 +906,7 @@ const ProbabilityCalculator = ({ isOpen, onClose, totalBags, totalChases }) => {
                   value={chasesHit}
                   onChange={(e) => {
                     const value = e.target.value === '' ? '' : parseInt(e.target.value);
-                    setChasesHit(value === '' ? 0 : Math.min(totalChases, Math.max(0, value)));
+                    setChasesHit(value === '' ? 0 : Math.min(simTotalChases, Math.max(0, value)));
                   }}
                   className="w-full px-3 py-2 bg-blue-800/50 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
@@ -880,7 +918,7 @@ const ProbabilityCalculator = ({ isOpen, onClose, totalBags, totalChases }) => {
                   value={bagsDrawn}
                   onChange={(e) => {
                     const value = e.target.value === '' ? '' : parseInt(e.target.value);
-                    setBagsDrawn(value === '' ? 0 : Math.min(remainingBags, Math.max(0, value)));
+                    setBagsDrawn(value === '' ? 0 : Math.min(simBagsLeft, Math.max(0, value)));
                   }}
                   className="w-full px-3 py-2 bg-blue-800/50 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
@@ -2301,20 +2339,8 @@ useEffect(() => {
     <motion.img 
       src="/148.gif"
       alt="Dragonair"
-      className={`w-20 h-20 object-contain cursor-pointer ${
-        dragonairCircleActive ? 'ring-4 ring-green-400 ring-opacity-70 rounded-full' : ''
-      }`}
-      onClick={() => {
-        if (!dragonairCircleActive) {
-          // Cycle to next dragonair circle image when turning on
-          setCurrentDragonairImageIndex((prev) => (prev + 1) % dragonairCircleImages.length);
-          setDragonairCircleActive(true);
-          startDragonairShamrockSystem();
-        } else {
-          setDragonairCircleActive(false);
-          stopDragonairShamrockSystem();
-        }
-      }}
+      className="w-20 h-20 object-contain cursor-pointer"
+      onClick={() => setShowProbCalc(true)}
       whileHover={{ scale: 1.1 }}
       whileTap={{ scale: 0.9 }}
     />
@@ -2706,6 +2732,17 @@ className={`
       {showPlusPopup && <CenterPopup text="+1 Chase" />}
     </AnimatePresence>
 
+    {/* Probability Calculator Modal */}
+    <AnimatePresence>
+      {showProbCalc && (
+        <ProbabilityCalculator
+          isOpen={showProbCalc}
+          onClose={() => setShowProbCalc(false)}
+          totalBags={bagCount - selectedNumbers.size}
+          totalChases={remainingChases}
+        />
+      )}
+    </AnimatePresence>
 
             <AnimatePresence>
               {showResetConfirm && (
