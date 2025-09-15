@@ -738,6 +738,9 @@ const [shimmerLevel, setShimmerLevel] = useState(0) // 0 = off, 1-3 = shine leve
   const [isFlashing, setIsFlashing] = useState(false);
   const flashTimeoutRef = useRef(null);
 
+  // Loading state for probability calculator
+  const [isLoadingProbCalc, setIsLoadingProbCalc] = useState(false);
+
   // Dragonair circle images array for cycling
   const dragonairCircleImages = [
     '/burstshrock.webp',
@@ -1392,6 +1395,31 @@ const handleBagCountChange = (increment) => {
     if (remainingBags === 0) return '0%'
     const ratio = (remainingChases / remainingBags) * 100
     return `${ratio.toFixed(1)}%`
+  }
+
+  // Function to safely open probability calculator with animation cleanup
+  const openProbabilityCalculator = () => {
+    // Show loading popup
+    setIsLoadingProbCalc(true);
+    
+    // 1. Turn off Dragonair animations if they are on
+    if (dragonairCircleActive) {
+      setDragonairCircleActive(false);
+      stopDragonairShamrockSystem();
+    }
+    
+    // 2. Suppress box flashing before opening probability calculator
+    if (flashTimeoutRef.current) {
+      clearTimeout(flashTimeoutRef.current);
+    }
+    setIsFlashing(false);
+    setLastClickedBox(null);
+    
+    // 3. Wait for animations to finish (around 2 seconds) before opening
+    setTimeout(() => {
+      setIsLoadingProbCalc(false);
+      setShowProbCalc(true);
+    }, 2500);
   }
 // For prize images
 const handlePrizeImageUpload = async (e) => {
@@ -2340,7 +2368,7 @@ useEffect(() => {
       src="/148.gif"
       alt="Dragonair"
       className="w-20 h-20 object-contain cursor-pointer"
-      onClick={() => setShowProbCalc(true)}
+      onClick={openProbabilityCalculator}
       whileHover={{ scale: 1.1 }}
       whileTap={{ scale: 0.9 }}
     />
@@ -2353,6 +2381,18 @@ useEffect(() => {
           className="absolute top-0 left-1/2 -translate-x-1/2 text-white font-bold text-xl"
         >
           +1 Chase
+        </motion.div>
+      )}
+    </AnimatePresence>
+    <AnimatePresence>
+      {isLoadingProbCalc && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.5 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.5 }}
+          className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-8 bg-black/70 backdrop-blur-sm px-4 py-2 rounded-lg"
+        >
+          <span className="text-white font-bold text-sm whitespace-nowrap">loading 2 sec</span>
         </motion.div>
       )}
     </AnimatePresence>
