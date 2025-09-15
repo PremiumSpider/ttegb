@@ -730,6 +730,9 @@ const [shimmerLevel, setShimmerLevel] = useState(0) // 0 = off, 1-3 = shine leve
   const [fontSizeLevel, setFontSizeLevel] = useState(2); // 0-4, where 2 is default
   const [statsFontSizeLevel, setStatsFontSizeLevel] = useState(1); // 0-3, where 1 is default (current size)
   
+  // Hit R transparency toggle state
+  const [hitRTransparent, setHitRTransparent] = useState(false);
+  
   // Last clicked box flashing state
   const [lastClickedBox, setLastClickedBox] = useState(null);
   const [isFlashing, setIsFlashing] = useState(false);
@@ -1996,6 +1999,7 @@ const handleReset = () => {
     setCurrentImageIndex(0)
     setQueueCount(0)
     setShimmerLevel(0)
+    setHitRTransparent(false)
   } catch (error) {
     console.error('Error resetting state:', error)
   }
@@ -2680,7 +2684,14 @@ className={`
                   <span className="text-red-500 font-bold whitespace-nowrap">{remainingChases} Chases</span>
                   <span className="text-black font-bold hidden sm:inline"> / </span>
                   <span className="text-black font-bold whitespace-nowrap">{bagCount - selectedNumbers.size - queueCount} Bags</span>
-                  <span className="text-blue-500 font-bold whitespace-nowrap hidden md:inline"> (Hit R: {calculateHitRatio()})</span>
+                  <span 
+                    className="text-blue-500 font-bold whitespace-nowrap hidden md:inline cursor-pointer transition-opacity duration-300" 
+                    style={{ opacity: hitRTransparent ? 0 : 1 }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setHitRTransparent(!hitRTransparent);
+                    }}
+                  > (Hit R: {calculateHitRatio()})</span>
                   {/* Show hit ratio on smaller screens in a more compact way */}
                   <span className="text-blue-500 font-bold whitespace-nowrap md:hidden text-xs"> {calculateHitRatio()}</span>
                 </div>
