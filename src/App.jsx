@@ -27,7 +27,12 @@ function App() {
 
   // Toggle between default backgrounds
   const toggleDefaultBackground = () => {
-    if (!isCustomBackground) {
+    // If currently using a custom background, switch to orchids first
+    if (isCustomBackground) {
+      setBackgroundImage('/orchids.jpg')
+      setIsCustomBackground(false)
+    } else {
+      // Toggle between orchids and flamers
       setBackgroundImage(backgroundImage === '/orchids.jpg' ? '/flamers.webp' : '/orchids.jpg')
     }
   }

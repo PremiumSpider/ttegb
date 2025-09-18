@@ -53,6 +53,12 @@ function PackPopShop({ backgroundImage, pokeballRain, togglePokeballRain, onImag
     const config = loadConfig()
     return config?.fontSizeLevel || 2
   })
+
+  // State for font family control (0 = default, 1 = Comic Sans, 2 = Papyrus)
+  const [fontFamily, setFontFamily] = useState(() => {
+    const config = loadConfig()
+    return config?.fontFamily || 0
+  })
   
   // State for orientation detection
   const [orientation, setOrientation] = useState(
@@ -70,6 +76,7 @@ function PackPopShop({ backgroundImage, pokeballRain, togglePokeballRain, onImag
       saveConfig({
         bagCount,
         fontSizeLevel,
+        fontFamily,
         boxStates: newStates
       })
       return newStates
@@ -84,6 +91,7 @@ function PackPopShop({ backgroundImage, pokeballRain, togglePokeballRain, onImag
       saveConfig({
         bagCount,
         fontSizeLevel: newLevel,
+        fontFamily,
         boxStates
       })
       return newLevel
@@ -108,6 +116,7 @@ function PackPopShop({ backgroundImage, pokeballRain, togglePokeballRain, onImag
         saveConfig({
           bagCount: newCount,
           fontSizeLevel,
+          fontFamily,
           boxStates: newStates
         })
         return newStates
@@ -123,6 +132,7 @@ function PackPopShop({ backgroundImage, pokeballRain, togglePokeballRain, onImag
         saveConfig({
           bagCount: newCount,
           fontSizeLevel,
+          fontFamily,
           boxStates: newStates
         })
         return newStates
@@ -130,11 +140,27 @@ function PackPopShop({ backgroundImage, pokeballRain, togglePokeballRain, onImag
     }
   }
 
+  // Font family control function
+  const handleFontFamilyChange = () => {
+    setFontFamily(prev => {
+      const newFamily = (prev + 1) % 3
+      // Save to localStorage
+      saveConfig({
+        bagCount,
+        fontSizeLevel,
+        fontFamily: newFamily,
+        boxStates
+      })
+      return newFamily
+    })
+  }
+
   // Reset function
   const handleReset = () => {
     if (confirm('Are you sure you want to reset all boxes and settings? This cannot be undone.')) {
       const defaultBagCount = 50
       const defaultFontSize = 2
+      const defaultFontFamily = 0
       const defaultBoxStates = {}
       
       // Initialize default box states
@@ -145,12 +171,14 @@ function PackPopShop({ backgroundImage, pokeballRain, togglePokeballRain, onImag
       // Reset all states
       setBagCount(defaultBagCount)
       setFontSizeLevel(defaultFontSize)
+      setFontFamily(defaultFontFamily)
       setBoxStates(defaultBoxStates)
       
       // Save to localStorage
       saveConfig({
         bagCount: defaultBagCount,
         fontSizeLevel: defaultFontSize,
+        fontFamily: defaultFontFamily,
         boxStates: defaultBoxStates
       })
     }
@@ -169,6 +197,22 @@ function PackPopShop({ backgroundImage, pokeballRain, togglePokeballRain, onImag
       'text-7xl sm:text-8xl md:text-9xl lg:text-10xl xl:text-11xl'  // Level 7 - gigantic
     ]
     return fontSizes[fontSizeLevel]
+  }
+
+  // Get font family style based on selection
+  const getFontFamilyStyle = () => {
+    const fontFamilies = [
+      {}, // Default - no specific font family
+      { fontFamily: '"Comic Sans MS", cursive, sans-serif' }, // Comic Sans
+      { fontFamily: 'Papyrus, fantasy, cursive' } // Papyrus
+    ]
+    return fontFamilies[fontFamily]
+  }
+
+  // Get font family name for display
+  const getFontFamilyName = () => {
+    const names = ['Default', 'Comic', 'Papyrus']
+    return names[fontFamily]
   }
 
   // Detect orientation changes
@@ -387,6 +431,19 @@ function PackPopShop({ backgroundImage, pokeballRain, togglePokeballRain, onImag
                     </div>
                   </div>
 
+                  {/* Font Family Toggle Controls */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-base font-medium text-white">Font:</span>
+                    <motion.button
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                      onClick={handleFontFamilyChange}
+                      className="px-4 h-10 rounded-lg flex items-center justify-center text-sm font-bold transition-colors border bg-indigo-600/80 hover:bg-indigo-500/80 text-white border-indigo-500/50"
+                    >
+                      {getFontFamilyName()}
+                    </motion.button>
+                  </div>
+
                   {/* Background Toggle Controls */}
                   <div className="flex items-center gap-2">
                     <span className="text-base font-medium text-white">Background:</span>
@@ -394,10 +451,9 @@ function PackPopShop({ backgroundImage, pokeballRain, togglePokeballRain, onImag
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.9 }}
                       onClick={toggleDefaultBackground}
-                      disabled={isCustomBackground}
                       className={`px-4 h-10 rounded-lg flex items-center justify-center text-sm font-bold transition-colors border ${
                         isCustomBackground 
-                          ? 'bg-gray-600/50 text-gray-400 border-gray-500/30 cursor-not-allowed' 
+                          ? 'bg-gray-600/80 hover:bg-gray-500/80 text-white border-gray-500/50' 
                           : backgroundImage === '/orchids.jpg'
                           ? 'bg-purple-600/80 hover:bg-purple-500/80 text-white border-purple-500/50'
                           : 'bg-orange-600/80 hover:bg-orange-500/80 text-white border-orange-500/50'
@@ -444,9 +500,12 @@ function PackPopShop({ backgroundImage, pokeballRain, togglePokeballRain, onImag
                   whileTap={{ scale: 0.95 }}
                 >
                   {/* Box content - show number only when unscratched */}
-                  <span className={`relative z-10 select-none font-bold transition-opacity duration-300 ${
-                    boxStates[number] === 1 || boxStates[number] === 2 ? 'opacity-0' : 'opacity-100'
-                  }`}>
+                  <span 
+                    className={`relative z-10 select-none font-bold transition-opacity duration-300 ${
+                      boxStates[number] === 1 || boxStates[number] === 2 ? 'opacity-0' : 'opacity-100'
+                    }`}
+                    style={getFontFamilyStyle()}
+                  >
                     {getBoxContent(number, boxStates[number])}
                   </span>
                   
