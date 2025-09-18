@@ -398,9 +398,10 @@ function PackPopShop({ backgroundImage, pokeballRain, togglePokeballRain, onImag
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
-                className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center sm:justify-between gap-4 mx-4 mb-2 bg-black/20 backdrop-blur-sm p-4 rounded-xl"
+                className="flex flex-col gap-4 mx-4 mb-2 bg-black/20 backdrop-blur-sm p-4 rounded-xl"
               >
-                <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                {/* First Row of Controls */}
+                <div className="flex flex-col sm:flex-row sm:items-center gap-4 flex-wrap">
                   {/* Font Size Controls */}
                   <div className="flex items-center gap-2">
                     <span className="text-base font-medium text-white">Font Size:</span>
@@ -485,56 +486,61 @@ function PackPopShop({ backgroundImage, pokeballRain, togglePokeballRain, onImag
                       {getFontFamilyName()}
                     </motion.button>
                   </div>
-
-                  {/* Text Color Toggle Controls */}
-                  <div className="flex items-center gap-2">
-                    <span className="text-base font-medium text-white">Text Color:</span>
-                    <motion.button
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.9 }}
-                      onClick={handleTextColorChange}
-                      className={`px-4 h-10 rounded-lg flex items-center justify-center text-sm font-bold transition-colors border ${
-                        textColor === 0 
-                          ? 'bg-gray-600/80 hover:bg-gray-500/80 text-white border-gray-500/50'
-                          : textColor === 1
-                          ? 'bg-yellow-600/80 hover:bg-yellow-500/80 text-white border-yellow-500/50'
-                          : 'bg-purple-600/80 hover:bg-purple-500/80 text-white border-purple-500/50'
-                      }`}
-                    >
-                      {getTextColorName()}
-                    </motion.button>
-                  </div>
-
-                  {/* Background Toggle Controls */}
-                  <div className="flex items-center gap-2">
-                    <span className="text-base font-medium text-white">Background:</span>
-                    <motion.button
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.9 }}
-                      onClick={toggleDefaultBackground}
-                      className={`px-4 h-10 rounded-lg flex items-center justify-center text-sm font-bold transition-colors border ${
-                        isCustomBackground 
-                          ? 'bg-gray-600/80 hover:bg-gray-500/80 text-white border-gray-500/50' 
-                          : backgroundImage === '/orchids.jpg'
-                          ? 'bg-purple-600/80 hover:bg-purple-500/80 text-white border-purple-500/50'
-                          : 'bg-orange-600/80 hover:bg-orange-500/80 text-white border-orange-500/50'
-                      }`}
-                    >
-                      {isCustomBackground ? 'Custom' : backgroundImage === '/orchids.jpg' ? 'Orchids' : 'Flame'}
-                    </motion.button>
-                  </div>
                 </div>
 
-                {/* Reset Button */}
-                <div className="flex items-center">
-                  <motion.button
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    onClick={handleReset}
-                    className="px-6 h-10 rounded-lg flex items-center justify-center text-sm font-bold transition-colors border bg-red-600/80 hover:bg-red-500/80 text-white border-red-500/50"
-                  >
-                    Reset All
-                  </motion.button>
+                {/* Second Row of Controls */}
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 flex-wrap">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-4 flex-wrap">
+                    {/* Text Color Toggle Controls */}
+                    <div className="flex items-center gap-2">
+                      <span className="text-base font-medium text-white">Text Color:</span>
+                      <motion.button
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        onClick={handleTextColorChange}
+                        className={`px-4 h-10 rounded-lg flex items-center justify-center text-sm font-bold transition-colors border ${
+                          textColor === 0 
+                            ? 'bg-gray-600/80 hover:bg-gray-500/80 text-white border-gray-500/50'
+                            : textColor === 1
+                            ? 'bg-yellow-600/80 hover:bg-yellow-500/80 text-white border-yellow-500/50'
+                            : 'bg-purple-600/80 hover:bg-purple-500/80 text-white border-purple-500/50'
+                        }`}
+                      >
+                        {getTextColorName()}
+                      </motion.button>
+                    </div>
+
+                    {/* Background Toggle Controls */}
+                    <div className="flex items-center gap-2">
+                      <span className="text-base font-medium text-white">Background:</span>
+                      <motion.button
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        onClick={toggleDefaultBackground}
+                        className={`px-4 h-10 rounded-lg flex items-center justify-center text-sm font-bold transition-colors border ${
+                          isCustomBackground 
+                            ? 'bg-gray-600/80 hover:bg-gray-500/80 text-white border-gray-500/50' 
+                            : backgroundImage === '/orchids.jpg'
+                            ? 'bg-purple-600/80 hover:bg-purple-500/80 text-white border-purple-500/50'
+                            : 'bg-orange-600/80 hover:bg-orange-500/80 text-white border-orange-500/50'
+                        }`}
+                      >
+                        {isCustomBackground ? 'Custom' : backgroundImage === '/orchids.jpg' ? 'Orchids' : 'Flame'}
+                      </motion.button>
+                    </div>
+                  </div>
+
+                  {/* Reset Button */}
+                  <div className="flex items-center">
+                    <motion.button
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                      onClick={handleReset}
+                      className="px-6 h-10 rounded-lg flex items-center justify-center text-sm font-bold transition-colors border bg-red-600/80 hover:bg-red-500/80 text-white border-red-500/50"
+                    >
+                      Reset All
+                    </motion.button>
+                  </div>
                 </div>
               </motion.div>
             )}
