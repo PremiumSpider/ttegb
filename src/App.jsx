@@ -4,7 +4,7 @@ import PackPopShop from './PackPopShop'
 
 function App() {
   // State for uploaded background image
-  const [backgroundImage, setBackgroundImage] = useState(null)
+  const [backgroundImage, setBackgroundImage] = useState('/orchids.jpg')
   
   // State for pokeball rain
   const [pokeballRain, setPokeballRain] = useState(false)
