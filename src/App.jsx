@@ -5,6 +5,7 @@ import PackPopShop from './PackPopShop'
 function App() {
   // State for uploaded background image
   const [backgroundImage, setBackgroundImage] = useState('/orchids.jpg')
+  const [isCustomBackground, setIsCustomBackground] = useState(false)
   
   // State for pokeball rain
   const [pokeballRain, setPokeballRain] = useState(false)
@@ -18,8 +19,16 @@ function App() {
       const reader = new FileReader()
       reader.onload = (e) => {
         setBackgroundImage(e.target.result)
+        setIsCustomBackground(true)
       }
       reader.readAsDataURL(file)
+    }
+  }
+
+  // Toggle between default backgrounds
+  const toggleDefaultBackground = () => {
+    if (!isCustomBackground) {
+      setBackgroundImage(backgroundImage === '/orchids.jpg' ? '/flamers.webp' : '/orchids.jpg')
     }
   }
 
@@ -96,6 +105,8 @@ function App() {
         pokeballRain={pokeballRain}
         togglePokeballRain={togglePokeballRain}
         onImageUpload={handleImageUpload}
+        toggleDefaultBackground={toggleDefaultBackground}
+        isCustomBackground={isCustomBackground}
       />
 
       {/* Pokeball Rain */}

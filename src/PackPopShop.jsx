@@ -1,25 +1,58 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 
-function PackPopShop({ backgroundImage, pokeballRain, togglePokeballRain, onImageUpload }) {
+function PackPopShop({ backgroundImage, pokeballRain, togglePokeballRain, onImageUpload, toggleDefaultBackground, isCustomBackground }) {
+  // Load configuration from localStorage
+  const loadConfig = () => {
+    try {
+      const savedConfig = localStorage.getItem('packPopShopConfig')
+      if (savedConfig) {
+        return JSON.parse(savedConfig)
+      }
+    } catch (error) {
+      console.error('Error loading config:', error)
+    }
+    return null
+  }
+
+  // Save configuration to localStorage
+  const saveConfig = (config) => {
+    try {
+      localStorage.setItem('packPopShopConfig', JSON.stringify(config))
+    } catch (error) {
+      console.error('Error saving config:', error)
+    }
+  }
+
   // State for edit mode
   const [isEditMode, setIsEditMode] = useState(false)
   
   // State for bag count
-  const [bagCount, setBagCount] = useState(50)
+  const [bagCount, setBagCount] = useState(() => {
+    const config = loadConfig()
+    return config?.bagCount || 50
+  })
   
   // State for the boxes (dynamic count)
   const [boxStates, setBoxStates] = useState(() => {
+    const config = loadConfig()
+    if (config?.boxStates) {
+      return config.boxStates
+    }
     // Initialize all boxes as unscratched (0)
     const initialState = {}
-    for (let i = 1; i <= 50; i++) {
+    const count = config?.bagCount || 50
+    for (let i = 1; i <= count; i++) {
       initialState[i] = 0 // 0 = unscratched, 1 = red/green scratch, 2 = chase, 3 = reset
     }
     return initialState
   })
 
   // State for font size control (0-7, where 2 is now default - increased by 2 levels)
-  const [fontSizeLevel, setFontSizeLevel] = useState(2)
+  const [fontSizeLevel, setFontSizeLevel] = useState(() => {
+    const config = loadConfig()
+    return config?.fontSizeLevel || 2
+  })
   
   // State for orientation detection
   const [orientation, setOrientation] = useState(
@@ -28,15 +61,33 @@ function PackPopShop({ backgroundImage, pokeballRain, togglePokeballRain, onImag
 
   // Handle box click with 3-state cycle
   const handleBoxClick = (boxNumber) => {
-    setBoxStates(prev => ({
-      ...prev,
-      [boxNumber]: (prev[boxNumber] + 1) % 3
-    }))
+    setBoxStates(prev => {
+      const newStates = {
+        ...prev,
+        [boxNumber]: (prev[boxNumber] + 1) % 3
+      }
+      // Save to localStorage
+      saveConfig({
+        bagCount,
+        fontSizeLevel,
+        boxStates: newStates
+      })
+      return newStates
+    })
   }
 
   // Font size control functions
   const handleFontSizeChange = (increment) => {
-    setFontSizeLevel(prev => Math.max(0, Math.min(7, prev + increment)))
+    setFontSizeLevel(prev => {
+      const newLevel = Math.max(0, Math.min(7, prev + increment))
+      // Save to localStorage
+      saveConfig({
+        bagCount,
+        fontSizeLevel: newLevel,
+        boxStates
+      })
+      return newLevel
+    })
   }
 
   // Bag count control functions
@@ -45,23 +96,62 @@ function PackPopShop({ backgroundImage, pokeballRain, togglePokeballRain, onImag
     setBagCount(newCount)
     
     // Update box states for new count
+    let newStates
     if (increment > 0) {
       // Adding boxes
       setBoxStates(prev => {
-        const newStates = { ...prev }
+        newStates = { ...prev }
         for (let i = bagCount + 1; i <= newCount; i++) {
           newStates[i] = 0
         }
+        // Save to localStorage
+        saveConfig({
+          bagCount: newCount,
+          fontSizeLevel,
+          boxStates: newStates
+        })
         return newStates
       })
     } else {
       // Removing boxes
       setBoxStates(prev => {
-        const newStates = { ...prev }
+        newStates = { ...prev }
         for (let i = newCount + 1; i <= bagCount; i++) {
           delete newStates[i]
         }
+        // Save to localStorage
+        saveConfig({
+          bagCount: newCount,
+          fontSizeLevel,
+          boxStates: newStates
+        })
         return newStates
+      })
+    }
+  }
+
+  // Reset function
+  const handleReset = () => {
+    if (confirm('Are you sure you want to reset all boxes and settings? This cannot be undone.')) {
+      const defaultBagCount = 50
+      const defaultFontSize = 2
+      const defaultBoxStates = {}
+      
+      // Initialize default box states
+      for (let i = 1; i <= defaultBagCount; i++) {
+        defaultBoxStates[i] = 0
+      }
+      
+      // Reset all states
+      setBagCount(defaultBagCount)
+      setFontSizeLevel(defaultFontSize)
+      setBoxStates(defaultBoxStates)
+      
+      // Save to localStorage
+      saveConfig({
+        bagCount: defaultBagCount,
+        fontSizeLevel: defaultFontSize,
+        boxStates: defaultBoxStates
       })
     }
   }
@@ -296,6 +386,38 @@ function PackPopShop({ backgroundImage, pokeballRain, togglePokeballRain, onImag
                       </motion.button>
                     </div>
                   </div>
+
+                  {/* Background Toggle Controls */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-base font-medium text-white">Background:</span>
+                    <motion.button
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                      onClick={toggleDefaultBackground}
+                      disabled={isCustomBackground}
+                      className={`px-4 h-10 rounded-lg flex items-center justify-center text-sm font-bold transition-colors border ${
+                        isCustomBackground 
+                          ? 'bg-gray-600/50 text-gray-400 border-gray-500/30 cursor-not-allowed' 
+                          : backgroundImage === '/orchids.jpg'
+                          ? 'bg-purple-600/80 hover:bg-purple-500/80 text-white border-purple-500/50'
+                          : 'bg-orange-600/80 hover:bg-orange-500/80 text-white border-orange-500/50'
+                      }`}
+                    >
+                      {isCustomBackground ? 'Custom' : backgroundImage === '/orchids.jpg' ? 'Orchids' : 'Flame'}
+                    </motion.button>
+                  </div>
+                </div>
+
+                {/* Reset Button */}
+                <div className="flex items-center">
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={handleReset}
+                    className="px-6 h-10 rounded-lg flex items-center justify-center text-sm font-bold transition-colors border bg-red-600/80 hover:bg-red-500/80 text-white border-red-500/50"
+                  >
+                    Reset All
+                  </motion.button>
                 </div>
               </motion.div>
             )}
