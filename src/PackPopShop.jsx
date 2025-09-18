@@ -118,7 +118,7 @@ function PackPopShop({ backgroundImage, pokeballRain, togglePokeballRain, onImag
 
 
   return (
-    <div className="h-screen bg-gradient-to-br from-green-100 via-emerald-200 to-green-300">
+    <div className={`h-screen ${!backgroundImage ? 'bg-gradient-to-br from-green-100 via-emerald-200 to-green-300' : ''}`}>
       <div className="h-full bg-white/10 backdrop-blur-md rounded-2xl shadow-xl">
         <div className="h-full flex flex-col">
           {/* Top Header with Controls */}
