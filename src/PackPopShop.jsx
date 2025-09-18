@@ -59,6 +59,12 @@ function PackPopShop({ backgroundImage, pokeballRain, togglePokeballRain, onImag
     const config = loadConfig()
     return config?.fontFamily || 0
   })
+
+  // State for text color control (0 = white, 1 = yellow, 2 = purple)
+  const [textColor, setTextColor] = useState(() => {
+    const config = loadConfig()
+    return config?.textColor || 0
+  })
   
   // State for orientation detection
   const [orientation, setOrientation] = useState(
@@ -77,6 +83,7 @@ function PackPopShop({ backgroundImage, pokeballRain, togglePokeballRain, onImag
         bagCount,
         fontSizeLevel,
         fontFamily,
+        textColor,
         boxStates: newStates
       })
       return newStates
@@ -92,6 +99,7 @@ function PackPopShop({ backgroundImage, pokeballRain, togglePokeballRain, onImag
         bagCount,
         fontSizeLevel: newLevel,
         fontFamily,
+        textColor,
         boxStates
       })
       return newLevel
@@ -117,6 +125,7 @@ function PackPopShop({ backgroundImage, pokeballRain, togglePokeballRain, onImag
           bagCount: newCount,
           fontSizeLevel,
           fontFamily,
+          textColor,
           boxStates: newStates
         })
         return newStates
@@ -133,6 +142,7 @@ function PackPopShop({ backgroundImage, pokeballRain, togglePokeballRain, onImag
           bagCount: newCount,
           fontSizeLevel,
           fontFamily,
+          textColor,
           boxStates: newStates
         })
         return newStates
@@ -149,9 +159,26 @@ function PackPopShop({ backgroundImage, pokeballRain, togglePokeballRain, onImag
         bagCount,
         fontSizeLevel,
         fontFamily: newFamily,
+        textColor,
         boxStates
       })
       return newFamily
+    })
+  }
+
+  // Text color control function
+  const handleTextColorChange = () => {
+    setTextColor(prev => {
+      const newColor = (prev + 1) % 3
+      // Save to localStorage
+      saveConfig({
+        bagCount,
+        fontSizeLevel,
+        fontFamily,
+        textColor: newColor,
+        boxStates
+      })
+      return newColor
     })
   }
 
@@ -161,6 +188,7 @@ function PackPopShop({ backgroundImage, pokeballRain, togglePokeballRain, onImag
       const defaultBagCount = 50
       const defaultFontSize = 2
       const defaultFontFamily = 0
+      const defaultTextColor = 0
       const defaultBoxStates = {}
       
       // Initialize default box states
@@ -172,6 +200,7 @@ function PackPopShop({ backgroundImage, pokeballRain, togglePokeballRain, onImag
       setBagCount(defaultBagCount)
       setFontSizeLevel(defaultFontSize)
       setFontFamily(defaultFontFamily)
+      setTextColor(defaultTextColor)
       setBoxStates(defaultBoxStates)
       
       // Save to localStorage
@@ -179,6 +208,7 @@ function PackPopShop({ backgroundImage, pokeballRain, togglePokeballRain, onImag
         bagCount: defaultBagCount,
         fontSizeLevel: defaultFontSize,
         fontFamily: defaultFontFamily,
+        textColor: defaultTextColor,
         boxStates: defaultBoxStates
       })
     }
@@ -215,6 +245,18 @@ function PackPopShop({ backgroundImage, pokeballRain, togglePokeballRain, onImag
     return names[fontFamily]
   }
 
+  // Get text color class based on selection
+  const getTextColorClass = () => {
+    const colors = ['text-white', 'text-yellow-400', 'text-purple-400']
+    return colors[textColor]
+  }
+
+  // Get text color name for display
+  const getTextColorName = () => {
+    const names = ['White', 'Yellow', 'Purple']
+    return names[textColor]
+  }
+
   // Detect orientation changes
   useEffect(() => {
     const handleOrientationChange = () => {
@@ -233,14 +275,14 @@ function PackPopShop({ backgroundImage, pokeballRain, togglePokeballRain, onImag
   // Get box styling based on state
   const getBoxStyling = (state) => {
     switch (state) {
-      case 0: // Unscratched - black background with purple-red text
-        return 'bg-black text-purple-400 border-gray-800'
+      case 0: // Unscratched - black background with dynamic text color
+        return `bg-black ${getTextColorClass()} border-gray-800`
       case 1: // First click - red scratch (bag)
         return 'bg-red-600 text-white border-gray-800'
       case 2: // Second click - green scratch (chase)
         return 'bg-green-600 text-white border-gray-800'
       default: // Reset to unscratched
-        return 'bg-black text-purple-400 border-gray-800'
+        return `bg-black ${getTextColorClass()} border-gray-800`
     }
   }
 
@@ -441,6 +483,25 @@ function PackPopShop({ backgroundImage, pokeballRain, togglePokeballRain, onImag
                       className="px-4 h-10 rounded-lg flex items-center justify-center text-sm font-bold transition-colors border bg-indigo-600/80 hover:bg-indigo-500/80 text-white border-indigo-500/50"
                     >
                       {getFontFamilyName()}
+                    </motion.button>
+                  </div>
+
+                  {/* Text Color Toggle Controls */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-base font-medium text-white">Text Color:</span>
+                    <motion.button
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                      onClick={handleTextColorChange}
+                      className={`px-4 h-10 rounded-lg flex items-center justify-center text-sm font-bold transition-colors border ${
+                        textColor === 0 
+                          ? 'bg-gray-600/80 hover:bg-gray-500/80 text-white border-gray-500/50'
+                          : textColor === 1
+                          ? 'bg-yellow-600/80 hover:bg-yellow-500/80 text-white border-yellow-500/50'
+                          : 'bg-purple-600/80 hover:bg-purple-500/80 text-white border-purple-500/50'
+                      }`}
+                    >
+                      {getTextColorName()}
                     </motion.button>
                   </div>
 
