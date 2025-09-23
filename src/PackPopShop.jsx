@@ -65,6 +65,12 @@ function PackPopShop({ backgroundImage, pokeballRain, togglePokeballRain, onImag
     const config = loadConfig()
     return config?.textColor || 0
   })
+
+  // State for slowstars background toggle
+  const [useSlowstarsBackground, setUseSlowstarsBackground] = useState(() => {
+    const config = loadConfig()
+    return config?.useSlowstarsBackground || false
+  })
   
   // State for orientation detection
   const [orientation, setOrientation] = useState(
@@ -176,9 +182,27 @@ function PackPopShop({ backgroundImage, pokeballRain, togglePokeballRain, onImag
         fontSizeLevel,
         fontFamily,
         textColor: newColor,
+        useSlowstarsBackground,
         boxStates
       })
       return newColor
+    })
+  }
+
+  // Slowstars background toggle function
+  const handleSlowstarsBackgroundToggle = () => {
+    setUseSlowstarsBackground(prev => {
+      const newValue = !prev
+      // Save to localStorage
+      saveConfig({
+        bagCount,
+        fontSizeLevel,
+        fontFamily,
+        textColor,
+        useSlowstarsBackground: newValue,
+        boxStates
+      })
+      return newValue
     })
   }
 
@@ -275,14 +299,18 @@ function PackPopShop({ backgroundImage, pokeballRain, togglePokeballRain, onImag
   // Get box styling based on state
   const getBoxStyling = (state) => {
     switch (state) {
-      case 0: // Unscratched - black background with dynamic text color
-        return `bg-black ${getTextColorClass()} border-gray-800`
-      case 1: // First click - red scratch (bag)
-        return 'bg-red-600 text-white border-gray-800'
-      case 2: // Second click - green scratch (chase)
-        return 'bg-green-600 text-white border-gray-800'
+      case 0: // Unscratched - black background when stars off, dynamic text color when stars on
+        return useSlowstarsBackground 
+          ? `${getTextColorClass()} border-gray-800`
+          : `bg-black ${getTextColorClass()} border-gray-800`
+      case 1: // First click - gold bars background
+        return 'text-white border-gray-800'
+      case 2: // Second click - 3 gold bars background
+        return 'text-white border-gray-800'
       default: // Reset to unscratched
-        return `bg-black ${getTextColorClass()} border-gray-800`
+        return useSlowstarsBackground 
+          ? `${getTextColorClass()} border-gray-800`
+          : `bg-black ${getTextColorClass()} border-gray-800`
     }
   }
 
@@ -295,7 +323,7 @@ function PackPopShop({ backgroundImage, pokeballRain, togglePokeballRain, onImag
 
   return (
     <div className={`h-screen ${!backgroundImage ? 'bg-gradient-to-br from-green-100 via-emerald-200 to-green-300' : ''}`}>
-      <div className="h-full bg-white/10 backdrop-blur-md rounded-2xl shadow-xl">
+      <div className="h-full bg-white/0 backdrop-blur-none rounded-2xl shadow-xl">
         <div className="h-full flex flex-col">
           {/* Top Header with Controls */}
           <div className="flex items-center justify-center p-4">
@@ -521,6 +549,23 @@ function PackPopShop({ backgroundImage, pokeballRain, togglePokeballRain, onImag
                         {isCustomBackground ? 'Custom' : backgroundImage === '/blueCircle.gif' ? 'Blue Circle' : backgroundImage === '/purplewave.gif' ? 'Purple Wave' : 'Red Germs'}
                       </motion.button>
                     </div>
+
+                    {/* Slowstars Box Background Toggle */}
+                    <div className="flex items-center gap-2">
+                      <span className="text-base font-medium text-white">Box Stars:</span>
+                      <motion.button
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        onClick={handleSlowstarsBackgroundToggle}
+                        className={`px-4 h-10 rounded-lg flex items-center justify-center text-sm font-bold transition-colors border ${
+                          useSlowstarsBackground 
+                            ? 'bg-cyan-600/80 hover:bg-cyan-500/80 text-white border-cyan-500/50' 
+                            : 'bg-gray-600/80 hover:bg-gray-500/80 text-white border-gray-500/50'
+                        }`}
+                      >
+                        {useSlowstarsBackground ? 'ON' : 'OFF'}
+                      </motion.button>
+                    </div>
                   </div>
 
                   {/* Reset Button */}
@@ -556,6 +601,12 @@ function PackPopShop({ backgroundImage, pokeballRain, togglePokeballRain, onImag
                     ${getBoxStyling(boxStates[number])}
                     shadow-md transition-all duration-300
                   `}
+                  style={boxStates[number] === 0 && useSlowstarsBackground ? {
+                    backgroundImage: 'url(/slowstars.gif)',
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                    backgroundRepeat: 'no-repeat'
+                  } : {}}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
@@ -569,30 +620,30 @@ function PackPopShop({ backgroundImage, pokeballRain, togglePokeballRain, onImag
                     {getBoxContent(number, boxStates[number])}
                   </span>
                   
-                  {/* Red brush stroke scratch effect for state 1 */}
+                  {/* Crypika black background for state 1 */}
                   {boxStates[number] === 1 && (
-                    <div className="absolute inset-0 overflow-hidden rounded-xl">
-                      <div className="absolute inset-0 bg-red-600 rounded-xl"></div>
-                      <div className="absolute top-1 left-1 w-9 h-1 bg-red-400 transform rotate-15 rounded-full opacity-80"></div>
-                      <div className="absolute top-4 right-2 w-7 h-1 bg-red-500 transform -rotate-30 rounded-full opacity-70"></div>
-                      <div className="absolute bottom-1 left-3 w-8 h-1 bg-red-300 transform rotate-60 rounded-full opacity-90"></div>
-                      <div className="absolute bottom-3 right-1 w-5 h-1 bg-red-400 transform -rotate-15 rounded-full opacity-75"></div>
-                      <div className="absolute top-3 left-5 w-4 h-1 bg-red-200 transform rotate-90 rounded-full opacity-85"></div>
-                      <div className="absolute bottom-2 left-7 w-6 h-1 bg-red-500 transform -rotate-45 rounded-full opacity-80"></div>
-                    </div>
+                    <div 
+                      className="absolute inset-0 rounded-xl"
+                      style={{
+                        backgroundImage: 'url(/crypikablack.png)',
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center',
+                        backgroundRepeat: 'no-repeat'
+                      }}
+                    />
                   )}
                   
-                  {/* Green brush stroke scratch effect for state 2 */}
+                  {/* 3GB black background for state 2 */}
                   {boxStates[number] === 2 && (
-                    <div className="absolute inset-0 overflow-hidden rounded-xl">
-                      <div className="absolute inset-0 bg-green-600 rounded-xl"></div>
-                      <div className="absolute top-1 left-2 w-8 h-1 bg-green-400 transform rotate-12 rounded-full opacity-80"></div>
-                      <div className="absolute top-3 right-1 w-6 h-1 bg-green-500 transform -rotate-45 rounded-full opacity-70"></div>
-                      <div className="absolute bottom-2 left-1 w-10 h-1 bg-green-300 transform rotate-45 rounded-full opacity-90"></div>
-                      <div className="absolute bottom-1 right-3 w-4 h-1 bg-green-400 transform -rotate-12 rounded-full opacity-75"></div>
-                      <div className="absolute top-2 left-4 w-3 h-1 bg-green-200 transform rotate-75 rounded-full opacity-85"></div>
-                      <div className="absolute bottom-3 left-6 w-5 h-1 bg-green-500 transform -rotate-30 rounded-full opacity-80"></div>
-                    </div>
+                    <div 
+                      className="absolute inset-0 rounded-xl"
+                      style={{
+                        backgroundImage: 'url(/3gbblack.png)',
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center',
+                        backgroundRepeat: 'no-repeat'
+                      }}
+                    />
                   )}
                 </motion.div>
               ))}
