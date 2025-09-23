@@ -83,13 +83,37 @@ function PackPopShop({ backgroundImage, pokeballRain, togglePokeballRain, onImag
     window.innerWidth > window.innerHeight ? 'landscape' : 'portrait'
   )
 
+  // State for flash animation tracking
+  const [flashingBoxes, setFlashingBoxes] = useState({})
+
   // Handle box click with 4-state cycle
   const handleBoxClick = (boxNumber) => {
     setBoxStates(prev => {
+      const currentState = prev[boxNumber] || 0
+      const newState = (currentState + 1) % 4
+      
+      // Trigger flash animation only when transitioning from state 0 to state 1 (number to question mark)
+      if (currentState === 0 && newState === 1) {
+        setFlashingBoxes(flashPrev => ({
+          ...flashPrev,
+          [boxNumber]: true
+        }))
+        
+        // Remove flash after 3 seconds
+        setTimeout(() => {
+          setFlashingBoxes(flashPrev => {
+            const newFlashState = { ...flashPrev }
+            delete newFlashState[boxNumber]
+            return newFlashState
+          })
+        }, 3000)
+      }
+      
       const newStates = {
         ...prev,
-        [boxNumber]: (prev[boxNumber] + 1) % 4
+        [boxNumber]: newState
       }
+      
       // Save to localStorage
       saveConfig({
         bagCount,
@@ -322,25 +346,30 @@ function PackPopShop({ backgroundImage, pokeballRain, togglePokeballRain, onImag
   }, [])
 
   // Get box styling based on state
-  const getBoxStyling = (state) => {
-    switch (state) {
-      case 0: // Unscratched - black background when stars off, dynamic text color when stars on
-        return useSlowstarsBackground 
-          ? `${getTextColorClass()} border-gray-800`
-          : `bg-black ${getTextColorClass()} border-gray-800`
-      case 1: // First click - question mark, same styling as unscratched
-        return useSlowstarsBackground 
-          ? `${getTextColorClass()} border-gray-800`
-          : `bg-black ${getTextColorClass()} border-gray-800`
-      case 2: // Second click - crypika black background
-        return 'text-white border-gray-800'
-      case 3: // Third click - gold printer/3gb background
-        return 'text-white border-gray-800'
-      default: // Reset to unscratched
-        return useSlowstarsBackground 
-          ? `${getTextColorClass()} border-gray-800`
-          : `bg-black ${getTextColorClass()} border-gray-800`
-    }
+  const getBoxStyling = (state, isFlashing) => {
+    const baseClasses = (() => {
+      switch (state) {
+        case 0: // Unscratched - black background when stars off, dynamic text color when stars on
+          return useSlowstarsBackground 
+            ? `${getTextColorClass()} border-gray-800`
+            : `bg-black ${getTextColorClass()} border-gray-800`
+        case 1: // First click - question mark, same styling as unscratched
+          return useSlowstarsBackground 
+            ? `${getTextColorClass()} border-gray-800`
+            : `bg-black ${getTextColorClass()} border-gray-800`
+        case 2: // Second click - crypika black background
+          return 'text-white border-gray-800'
+        case 3: // Third click - gold printer/3gb background
+          return 'text-white border-gray-800'
+        default: // Reset to unscratched
+          return useSlowstarsBackground 
+            ? `${getTextColorClass()} border-gray-800`
+            : `bg-black ${getTextColorClass()} border-gray-800`
+      }
+    })()
+    
+    // Add flashing animation class if the box is flashing
+    return isFlashing ? `${baseClasses} animate-pulse` : baseClasses
   }
 
   // Get box content based on state
@@ -654,15 +683,22 @@ function PackPopShop({ backgroundImage, pokeballRain, togglePokeballRain, onImag
                     rounded-xl cursor-pointer font-black
                     min-h-[3rem] sm:min-h-[3.5rem] md:min-h-[4rem] lg:min-h-[4.5rem] xl:min-h-[5rem]
                     ${getFontSizeClass()}
-                    ${getBoxStyling(boxStates[number])}
+                    ${getBoxStyling(boxStates[number], flashingBoxes[number])}
                     shadow-md transition-all duration-300
+                    ${flashingBoxes[number] ? 'border-4' : 'border-2'}
                   `}
-                  style={(boxStates[number] === 0 || boxStates[number] === 1) && useSlowstarsBackground ? {
-                    backgroundImage: 'url(/slowstars.gif)',
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center',
-                    backgroundRepeat: 'no-repeat'
-                  } : {}}
+                  style={{
+                    ...((boxStates[number] === 0 || boxStates[number] === 1) && useSlowstarsBackground ? {
+                      backgroundImage: 'url(/slowstars.gif)',
+                      backgroundSize: 'cover',
+                      backgroundPosition: 'center',
+                      backgroundRepeat: 'no-repeat'
+                    } : {}),
+                    ...(flashingBoxes[number] ? {
+                      animation: 'flash-border 0.5s infinite alternate',
+                      borderColor: 'white'
+                    } : {})
+                  }}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
