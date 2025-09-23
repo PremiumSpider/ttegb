@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import PackPopShop from './PackPopShop'
+import EuphyHitz from './PackPopShop'
 
 function App() {
   // State for uploaded background image
@@ -104,8 +104,8 @@ function App() {
       backgroundPosition: backgroundImage ? 'center' : 'initial',
       backgroundRepeat: backgroundImage ? 'no-repeat' : 'initial'
     }}>
-      {/* PackPopShop component with Mewtwo sprites passed as props */}
-      <PackPopShop 
+      {/* EuphyHitz component with Mewtwo sprites passed as props */}
+      <EuphyHitz 
         backgroundImage={backgroundImage}
         pokeballRain={pokeballRain}
         togglePokeballRain={togglePokeballRain}

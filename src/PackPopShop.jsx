@@ -303,8 +303,8 @@ function PackPopShop({ backgroundImage, pokeballRain, togglePokeballRain, onImag
             <div className="flex items-center gap-4">
               {/* Left Mewtwo - Pokeball rain toggle */}
               <motion.img 
-                src="/150.gif"
-                alt="Mewtwo Rain Toggle"
+                src="/272.gif"
+                alt="Ludicolo Rain Toggle"
                 className={`w-32 h-32 object-contain cursor-pointer ${pokeballRain ? 'ring-4 ring-red-400 rounded-full' : ''}`}
                 animate={{ 
                   y: [0, -8, 0],
@@ -336,7 +336,7 @@ function PackPopShop({ backgroundImage, pokeballRain, togglePokeballRain, onImag
                     setIsEditMode(!isEditMode);
                   }}
                 >
-                  PackPopShop
+                  EuphyHitz
                 </h1>
                 <h2 
                   className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-white mb-1" 
@@ -345,23 +345,14 @@ function PackPopShop({ backgroundImage, pokeballRain, togglePokeballRain, onImag
                     textShadow: '3px 3px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000'
                   }}
                 >
-                  SLAB BOX
+                  Gacha Bagz
                 </h2>
-              <h3 
-                className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-white" 
-                style={{
-                  fontFamily: 'Arial Black, sans-serif',
-                  textShadow: '3px 3px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000'
-                }}
-              >
-                2 FLOORS INSURANCE
-              </h3>
               </div>
               
               {/* Right Mewtwo - Background upload */}
               <motion.img 
-                src="/150.gif"
-                alt="Mewtwo Background Upload"
+                src="/272.gif"
+                alt="Ludicolo Background Upload"
                 className="w-32 h-32 object-contain cursor-pointer"
                 animate={{ 
                   y: [0, -8, 0],
