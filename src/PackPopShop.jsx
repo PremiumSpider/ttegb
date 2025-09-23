@@ -71,6 +71,12 @@ function PackPopShop({ backgroundImage, pokeballRain, togglePokeballRain, onImag
     const config = loadConfig()
     return config?.useSlowstarsBackground || false
   })
+
+  // State for second tap image toggle
+  const [useGoldPrinter, setUseGoldPrinter] = useState(() => {
+    const config = loadConfig()
+    return config?.useGoldPrinter || true
+  })
   
   // State for orientation detection
   const [orientation, setOrientation] = useState(
@@ -200,6 +206,25 @@ function PackPopShop({ backgroundImage, pokeballRain, togglePokeballRain, onImag
         fontFamily,
         textColor,
         useSlowstarsBackground: newValue,
+        useGoldPrinter,
+        boxStates
+      })
+      return newValue
+    })
+  }
+
+  // Gold printer toggle function
+  const handleGoldPrinterToggle = () => {
+    setUseGoldPrinter(prev => {
+      const newValue = !prev
+      // Save to localStorage
+      saveConfig({
+        bagCount,
+        fontSizeLevel,
+        fontFamily,
+        textColor,
+        useSlowstarsBackground,
+        useGoldPrinter: newValue,
         boxStates
       })
       return newValue
@@ -566,6 +591,23 @@ function PackPopShop({ backgroundImage, pokeballRain, togglePokeballRain, onImag
                         {useSlowstarsBackground ? 'ON' : 'OFF'}
                       </motion.button>
                     </div>
+
+                    {/* Second Tap Image Toggle */}
+                    <div className="flex items-center gap-2">
+                      <span className="text-base font-medium text-white">2nd Tap:</span>
+                      <motion.button
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        onClick={handleGoldPrinterToggle}
+                        className={`px-4 h-10 rounded-lg flex items-center justify-center text-sm font-bold transition-colors border ${
+                          useGoldPrinter 
+                            ? 'bg-yellow-600/80 hover:bg-yellow-500/80 text-white border-yellow-500/50' 
+                            : 'bg-gray-600/80 hover:bg-gray-500/80 text-white border-gray-500/50'
+                        }`}
+                      >
+                        {useGoldPrinter ? 'Gold' : '3GB'}
+                      </motion.button>
+                    </div>
                   </div>
 
                   {/* Reset Button */}
@@ -633,12 +675,12 @@ function PackPopShop({ backgroundImage, pokeballRain, togglePokeballRain, onImag
                     />
                   )}
                   
-                  {/* 3GB black background for state 2 */}
+                  {/* Second tap background - toggleable between 3gbblack.png and goldprinter.png */}
                   {boxStates[number] === 2 && (
                     <div 
                       className="absolute inset-0 rounded-xl"
                       style={{
-                        backgroundImage: 'url(/3gbblack.png)',
+                        backgroundImage: useGoldPrinter ? 'url(/goldprinter.png)' : 'url(/3gbblack.png)',
                         backgroundSize: 'cover',
                         backgroundPosition: 'center',
                         backgroundRepeat: 'no-repeat'
