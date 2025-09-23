@@ -511,12 +511,14 @@ function PackPopShop({ backgroundImage, pokeballRain, togglePokeballRain, onImag
                         className={`px-4 h-10 rounded-lg flex items-center justify-center text-sm font-bold transition-colors border ${
                           isCustomBackground 
                             ? 'bg-gray-600/80 hover:bg-gray-500/80 text-white border-gray-500/50' 
-                            : backgroundImage === '/orchids.jpg'
+                            : backgroundImage === '/blueCircle.gif'
+                            ? 'bg-blue-600/80 hover:bg-blue-500/80 text-white border-blue-500/50'
+                            : backgroundImage === '/purplewave.gif'
                             ? 'bg-purple-600/80 hover:bg-purple-500/80 text-white border-purple-500/50'
-                            : 'bg-orange-600/80 hover:bg-orange-500/80 text-white border-orange-500/50'
+                            : 'bg-red-600/80 hover:bg-red-500/80 text-white border-red-500/50'
                         }`}
                       >
-                        {isCustomBackground ? 'Custom' : backgroundImage === '/orchids.jpg' ? 'Orchids' : 'Flame'}
+                        {isCustomBackground ? 'Custom' : backgroundImage === '/blueCircle.gif' ? 'Blue Circle' : backgroundImage === '/purplewave.gif' ? 'Purple Wave' : 'Red Germs'}
                       </motion.button>
                     </div>
                   </div>

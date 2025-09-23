@@ -4,7 +4,7 @@ import EuphyHitz from './PackPopShop'
 
 function App() {
   // State for uploaded background image
-  const [backgroundImage, setBackgroundImage] = useState('/orchids.jpg')
+  const [backgroundImage, setBackgroundImage] = useState('/blueCircle.gif')
   const [isCustomBackground, setIsCustomBackground] = useState(false)
   
   // State for pokeball rain
@@ -27,13 +27,19 @@ function App() {
 
   // Toggle between default backgrounds
   const toggleDefaultBackground = () => {
-    // If currently using a custom background, switch to orchids first
+    // If currently using a custom background, switch to first gif
     if (isCustomBackground) {
-      setBackgroundImage('/orchids.jpg')
+      setBackgroundImage('/blueCircle.gif')
       setIsCustomBackground(false)
     } else {
-      // Toggle between orchids and flamers
-      setBackgroundImage(backgroundImage === '/orchids.jpg' ? '/flamers.webp' : '/orchids.jpg')
+      // Cycle through the three gif backgrounds
+      if (backgroundImage === '/blueCircle.gif') {
+        setBackgroundImage('/purplewave.gif')
+      } else if (backgroundImage === '/purplewave.gif') {
+        setBackgroundImage('/redgerms.gif')
+      } else {
+        setBackgroundImage('/blueCircle.gif')
+      }
     }
   }
 
