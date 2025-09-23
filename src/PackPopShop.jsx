@@ -83,12 +83,12 @@ function PackPopShop({ backgroundImage, pokeballRain, togglePokeballRain, onImag
     window.innerWidth > window.innerHeight ? 'landscape' : 'portrait'
   )
 
-  // Handle box click with 3-state cycle
+  // Handle box click with 4-state cycle
   const handleBoxClick = (boxNumber) => {
     setBoxStates(prev => {
       const newStates = {
         ...prev,
-        [boxNumber]: (prev[boxNumber] + 1) % 3
+        [boxNumber]: (prev[boxNumber] + 1) % 4
       }
       // Save to localStorage
       saveConfig({
@@ -328,9 +328,13 @@ function PackPopShop({ backgroundImage, pokeballRain, togglePokeballRain, onImag
         return useSlowstarsBackground 
           ? `${getTextColorClass()} border-gray-800`
           : `bg-black ${getTextColorClass()} border-gray-800`
-      case 1: // First click - gold bars background
+      case 1: // First click - question mark, same styling as unscratched
+        return useSlowstarsBackground 
+          ? `${getTextColorClass()} border-gray-800`
+          : `bg-black ${getTextColorClass()} border-gray-800`
+      case 2: // Second click - crypika black background
         return 'text-white border-gray-800'
-      case 2: // Second click - 3 gold bars background
+      case 3: // Third click - gold printer/3gb background
         return 'text-white border-gray-800'
       default: // Reset to unscratched
         return useSlowstarsBackground 
@@ -341,8 +345,18 @@ function PackPopShop({ backgroundImage, pokeballRain, togglePokeballRain, onImag
 
   // Get box content based on state
   const getBoxContent = (number, state) => {
-    // Always show the number regardless of state
-    return number
+    switch (state) {
+      case 0: // Unscratched - show number
+        return number
+      case 1: // First click - show question mark
+        return '?'
+      case 2: // Second click - hide content (background image will show)
+        return number
+      case 3: // Third click - hide content (background image will show)
+        return number
+      default:
+        return number
+    }
   }
 
 
@@ -643,7 +657,7 @@ function PackPopShop({ backgroundImage, pokeballRain, togglePokeballRain, onImag
                     ${getBoxStyling(boxStates[number])}
                     shadow-md transition-all duration-300
                   `}
-                  style={boxStates[number] === 0 && useSlowstarsBackground ? {
+                  style={(boxStates[number] === 0 || boxStates[number] === 1) && useSlowstarsBackground ? {
                     backgroundImage: 'url(/slowstars.gif)',
                     backgroundSize: 'cover',
                     backgroundPosition: 'center',
@@ -652,18 +666,18 @@ function PackPopShop({ backgroundImage, pokeballRain, togglePokeballRain, onImag
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
-                  {/* Box content - show number only when unscratched */}
+                  {/* Box content - show text for states 0 and 1, hide for states 2 and 3 */}
                   <span 
                     className={`relative z-10 select-none font-bold transition-opacity duration-300 ${
-                      boxStates[number] === 1 || boxStates[number] === 2 ? 'opacity-0' : 'opacity-100'
+                      boxStates[number] === 2 || boxStates[number] === 3 ? 'opacity-0' : 'opacity-100'
                     }`}
                     style={getFontFamilyStyle()}
                   >
                     {getBoxContent(number, boxStates[number])}
                   </span>
                   
-                  {/* Crypika black background for state 1 */}
-                  {boxStates[number] === 1 && (
+                  {/* Crypika black background for state 2 (what used to be state 1) */}
+                  {boxStates[number] === 2 && (
                     <div 
                       className="absolute inset-0 rounded-xl"
                       style={{
@@ -675,8 +689,8 @@ function PackPopShop({ backgroundImage, pokeballRain, togglePokeballRain, onImag
                     />
                   )}
                   
-                  {/* Second tap background - toggleable between 3gbblack.png and goldprinter.png */}
-                  {boxStates[number] === 2 && (
+                  {/* Third tap background - toggleable between 3gbblack.png and goldprinter.png */}
+                  {boxStates[number] === 3 && (
                     <div 
                       className="absolute inset-0 rounded-xl"
                       style={{
