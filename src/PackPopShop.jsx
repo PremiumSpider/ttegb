@@ -86,14 +86,78 @@ function PackPopShop({ backgroundImage, pokeballRain, togglePokeballRain, onImag
   // State for flash animation tracking
   const [flashingBoxes, setFlashingBoxes] = useState({})
 
-  // Handle box click with 4-state cycle
+  // Lock mechanism state variables
+  const [isLocked, setIsLocked] = useState(true)  // Lock starts as true (locked)
+  const [lockFlash, setLockFlash] = useState(false)  // Controls flash animation
+  const [unlockSelections, setUnlockSelections] = useState(new Set())  // Tracks rainbow borders
+  const [animationKey, setAnimationKey] = useState(0)  // For resetting animations
+
+  // Lock Button Component - Extra Long Rectangle with Centered Content
+  const LockButton = ({ isLocked, onToggle }) => (
+    <motion.button
+      onClick={onToggle}
+      className={`relative px-12 py-3 rounded-lg flex items-center justify-center gap-3 transition-all duration-300 min-w-[200px] ${
+        isLocked 
+          ? 'bg-red-500/30 hover:bg-red-500/40'  // Red when locked
+          : 'bg-green-500/30 hover:bg-green-500/40 animate-rainbow-border'  // Green + rainbow when unlocked
+      }`}
+      whileHover={{ scale: 1.05 }}
+      whileTap={{ scale: 0.95 }}
+    >
+      <motion.div
+        animate={{ rotate: isLocked ? 0 : 180 }}  // Rotates 180° when unlocked
+        className="text-xl text-white"
+        transition={{ duration: 0.3 }}
+      >
+        {isLocked ? '🔒' : '🔓'}  {/* Lock/unlock emoji */}
+      </motion.div>
+      <span className="text-white font-bold text-sm">
+        {isLocked ? 'LOCKED' : 'UNLOCKED'}
+      </span>
+    </motion.button>
+  );
+
+  // Calculate remaining (unmodified) bags count
+  const getRemainingBagsCount = () => {
+    const modifiedCount = Object.values(boxStates).filter(state => state !== 0).length;
+    return bagCount - modifiedCount;
+  };
+
+  // Counter Component showing remaining/total bags
+  const BagCounter = () => {
+    const remaining = getRemainingBagsCount();
+    return (
+      <motion.div
+        className="flex items-center gap-2 px-4 py-2 bg-blue-500/30 rounded-lg"
+        animate={{ scale: remaining < bagCount ? [1, 1.1, 1] : 1 }}
+        transition={{ duration: 0.3 }}
+      >
+        <span className="text-2xl">🎒</span>
+        <div className="flex flex-col items-center">
+          <span className="text-white font-bold text-lg">{remaining}/{bagCount}</span>
+          <span className="text-white text-xs">Bags</span>
+        </div>
+      </motion.div>
+    );
+  };
+
+  // Handle box click with 4-state cycle and lock mechanism
   const handleBoxClick = (boxNumber) => {
+    if (isLocked) {
+      // Flash the lock when trying to interact in locked state
+      setLockFlash(true);
+      setTimeout(() => setLockFlash(false), 600);
+      return;  // Exit early - no selection allowed
+    }
+
     setBoxStates(prev => {
       const currentState = prev[boxNumber] || 0
       const newState = (currentState + 1) % 4
       
-      // Trigger flash animation only when transitioning from state 0 to state 1 (number to question mark)
+      // Add to unlock selections when changing from unscratched to first click
       if (currentState === 0 && newState === 1) {
+        setUnlockSelections(prevUnlock => new Set([...prevUnlock, boxNumber]));
+        
         setFlashingBoxes(flashPrev => ({
           ...flashPrev,
           [boxNumber]: true
@@ -107,6 +171,20 @@ function PackPopShop({ backgroundImage, pokeballRain, togglePokeballRain, onImag
             return newFlashState
           })
         }, 3000)
+      } else if (currentState === 1 && newState === 2) {
+        // Remove from unlock selections when moving to second click
+        setUnlockSelections(prevUnlock => {
+          const newUnlock = new Set(prevUnlock);
+          newUnlock.delete(boxNumber);
+          return newUnlock;
+        });
+      } else if (currentState === 3 && newState === 0) {
+        // Remove from unlock selections when resetting to unscratched
+        setUnlockSelections(prevUnlock => {
+          const newUnlock = new Set(prevUnlock);
+          newUnlock.delete(boxNumber);
+          return newUnlock;
+        });
       }
       
       const newStates = {
@@ -394,7 +472,12 @@ function PackPopShop({ backgroundImage, pokeballRain, togglePokeballRain, onImag
       <div className="h-full bg-white/0 backdrop-blur-none rounded-2xl shadow-xl">
         <div className="h-full flex flex-col">
           {/* Top Header with Controls */}
-          <div className="flex items-center justify-center p-4">
+          <div className="flex items-center justify-between p-4">
+            {/* Left Side - Bag Counter */}
+            <div className="flex items-center">
+              <BagCounter />
+            </div>
+
             {/* Center Title Section with Mewtwo sprites next to it */}
             <div className="flex items-center gap-4">
               {/* Left Mewtwo - Pokeball rain toggle */}
@@ -473,6 +556,21 @@ function PackPopShop({ backgroundImage, pokeballRain, togglePokeballRain, onImag
                 accept="image/*"
                 onChange={onImageUpload}
                 className="hidden"
+              />
+            </div>
+
+            {/* Right Side - Lock Button */}
+            <div className="flex items-center">
+              <LockButton 
+                isLocked={isLocked} 
+                onToggle={() => {
+                  if (!isLocked) {
+                    setUnlockSelections(new Set());  // Clear rainbow borders when locking
+                  } else {
+                    setAnimationKey(prev => prev + 1);  // Reset animations when unlocking
+                  }
+                  setIsLocked(!isLocked);
+                }} 
               />
             </div>
           </div>
@@ -670,7 +768,7 @@ function PackPopShop({ backgroundImage, pokeballRain, togglePokeballRain, onImag
           </AnimatePresence>
 
           {/* Main Grid - Full Screen Layout that fills remaining space */}
-          <div className="flex-1 px-2 sm:px-4 pb-4 overflow-hidden">
+          <div className="flex-1 px-2 sm:px-4 pb-4 overflow-hidden relative">
             <div className={`grid gap-1 sm:gap-2 h-full ${
               orientation === 'landscape' ? 'grid-cols-10' : 'grid-cols-5'
             }`} style={{ maxHeight: 'calc(100vh - 200px)' }}>
@@ -686,6 +784,7 @@ function PackPopShop({ backgroundImage, pokeballRain, togglePokeballRain, onImag
                     ${getBoxStyling(boxStates[number], flashingBoxes[number])}
                     shadow-md transition-all duration-300
                     ${flashingBoxes[number] ? 'border-4' : 'border-2'}
+                    ${!isLocked && unlockSelections.has(number) ? 'border-[3px] animate-rainbow-border' : ''}
                   `}
                   style={{
                     ...((boxStates[number] === 0 || boxStates[number] === 1) && useSlowstarsBackground ? {
@@ -740,6 +839,20 @@ function PackPopShop({ backgroundImage, pokeballRain, togglePokeballRain, onImag
                 </motion.div>
               ))}
             </div>
+
+            {/* Lock Overlay - appears when locked */}
+            {isLocked && (
+              <motion.div
+                animate={{ 
+                  opacity: lockFlash ? 0.8 : 0.15,  // Flashes brighter when clicked
+                  scale: lockFlash ? 1.1 : 1 
+                }}
+                className="absolute inset-0 flex items-center justify-center pointer-events-none z-10"
+                transition={{ duration: 0.3 }}
+              >
+                <div className="text-[10rem] text-white drop-shadow-2xl">🔒</div>
+              </motion.div>
+            )}
           </div>
         </div>
       </div>
