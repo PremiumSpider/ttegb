@@ -829,7 +829,7 @@ function PackPopShop({ backgroundImage, pokeballRain, togglePokeballRain, onImag
                     <div 
                       className="absolute inset-0 rounded-xl"
                       style={{
-                        backgroundImage: useGoldPrinter ? 'url(/goldprinter.png)' : 'url(/3gbblack.png)',
+                        backgroundImage: useGoldPrinter ? 'url(/geomoney.png)' : 'url(/3gbblack.png)',
                         backgroundSize: 'cover',
                         backgroundPosition: 'center',
                         backgroundRepeat: 'no-repeat'
