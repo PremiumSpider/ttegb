@@ -77,6 +77,12 @@ function PackPopShop({ backgroundImage, pokeballRain, togglePokeballRain, onImag
     const config = loadConfig()
     return config?.useGoldPrinter || true
   })
+
+  // State for first tap display toggle (mystbox.png vs "?")
+  const [useFirstTapImage, setUseFirstTapImage] = useState(() => {
+    const config = loadConfig()
+    return config?.useFirstTapImage !== undefined ? config.useFirstTapImage : true
+  })
   
   // State for orientation detection
   const [orientation, setOrientation] = useState(
@@ -327,6 +333,26 @@ function PackPopShop({ backgroundImage, pokeballRain, togglePokeballRain, onImag
         textColor,
         useSlowstarsBackground,
         useGoldPrinter: newValue,
+        useFirstTapImage,
+        boxStates
+      })
+      return newValue
+    })
+  }
+
+  // First tap image toggle function
+  const handleFirstTapImageToggle = () => {
+    setUseFirstTapImage(prev => {
+      const newValue = !prev
+      // Save to localStorage
+      saveConfig({
+        bagCount,
+        fontSizeLevel,
+        fontFamily,
+        textColor,
+        useSlowstarsBackground,
+        useGoldPrinter,
+        useFirstTapImage: newValue,
         boxStates
       })
       return newValue
@@ -455,8 +481,8 @@ function PackPopShop({ backgroundImage, pokeballRain, togglePokeballRain, onImag
     switch (state) {
       case 0: // Unscratched - show number
         return number
-      case 1: // First click - show question mark
-        return '?'
+      case 1: // First click - show question mark or hide for image
+        return useFirstTapImage ? number : '?'
       case 2: // Second click - hide content (background image will show)
         return number
       case 3: // Third click - hide content (background image will show)
@@ -733,6 +759,23 @@ function PackPopShop({ backgroundImage, pokeballRain, togglePokeballRain, onImag
                       </motion.button>
                     </div>
 
+                    {/* First Tap Image Toggle */}
+                    <div className="flex items-center gap-2">
+                      <span className="text-base font-medium text-white">1st Tap:</span>
+                      <motion.button
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        onClick={handleFirstTapImageToggle}
+                        className={`px-4 h-10 rounded-lg flex items-center justify-center text-sm font-bold transition-colors border ${
+                          useFirstTapImage 
+                            ? 'bg-purple-600/80 hover:bg-purple-500/80 text-white border-purple-500/50' 
+                            : 'bg-gray-600/80 hover:bg-gray-500/80 text-white border-gray-500/50'
+                        }`}
+                      >
+                        {useFirstTapImage ? 'Box' : '?'}
+                      </motion.button>
+                    </div>
+
                     {/* Second Tap Image Toggle */}
                     <div className="flex items-center gap-2">
                       <span className="text-base font-medium text-white">2nd Tap:</span>
@@ -804,12 +847,26 @@ function PackPopShop({ backgroundImage, pokeballRain, togglePokeballRain, onImag
                   {/* Box content - show text for states 0 and 1, hide for states 2 and 3 */}
                   <span 
                     className={`relative z-10 select-none font-bold transition-opacity duration-300 ${
-                      boxStates[number] === 2 || boxStates[number] === 3 ? 'opacity-0' : 'opacity-100'
+                      boxStates[number] === 2 || boxStates[number] === 3 ? 'opacity-0' : 
+                      (boxStates[number] === 1 && useFirstTapImage) ? 'opacity-0' : 'opacity-100'
                     }`}
                     style={getFontFamilyStyle()}
                   >
                     {getBoxContent(number, boxStates[number])}
                   </span>
+                  
+                  {/* First tap mystbox.png background when useFirstTapImage is true */}
+                  {boxStates[number] === 1 && useFirstTapImage && (
+                    <div 
+                      className="absolute inset-0 rounded-xl"
+                      style={{
+                        backgroundImage: 'url(/mystbox.png)',
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center',
+                        backgroundRepeat: 'no-repeat'
+                      }}
+                    />
+                  )}
                   
                   {/* Crypika black background for state 2 (what used to be state 1) */}
                   {boxStates[number] === 2 && (
